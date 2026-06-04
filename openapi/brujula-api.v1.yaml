@@ -1,0 +1,3723 @@
+openapi: 3.1.0
+
+info:
+  title: Brújula — API
+  version: 1.0.0
+  summary: Contrato REST contract-first para la plataforma de planeación curricular y simulación académica.
+  description: |
+    Contrato formal (fuente de verdad) de la API REST JSON de Brújula
+    (Planificador Curricular, Universidad del Quindío).
+
+    Esta plataforma es una herramienta de **planeación personal**. La información académica
+    registrada por el estudiante es **autodeclarada** y **no reemplaza ni certifica** la
+    información oficial de la Universidad del Quindío.
+
+    ## Convenciones
+    - Ruta base: `/api/v1`.
+    - Cuerpos JSON UTF-8.
+    - Identificadores: UUID opacos.
+    - Fechas/auditoría: ISO 8601 en UTC con zona.
+    - Horarios de clase: día de la semana + hora local (`HH:mm`).
+    - Errores: `application/problem+json` (RFC 9457) con extensiones `code` y `metadata`.
+    - Paginación: `page`, `size`, `sort` con límites.
+    - Comandos críticos: cabecera `Idempotency-Key` obligatoria.
+    - Concurrencia: bloqueo optimista por `version`; conflicto `409`.
+    - Escritura: protección CSRF mediante cabecera `X-XSRF-TOKEN`.
+  contact:
+    name: Equipo Brújula
+  license:
+    name: Uso interno de proyecto
+    identifier: LicenseRef-Uniquindio-Internal
+
+servers:
+  - url: /api/v1
+    description: Ruta base relativa (Vite hace proxy de /api hacia Spring Boot en local).
+
+tags:
+  - name: Auth
+    description: Registro de estudiante, verificación de correo, recuperación y sesión.
+  - name: Profile
+    description: Perfil del usuario autenticado e historial personal de acciones.
+  - name: Subscriptions
+    description: Suscripciones de planificación del estudiante (1–2 programas).
+  - name: Progress
+    description: Avance curricular, intentos cursados y promedios estimados.
+  - name: Simulations
+    description: Simulaciones, selecciones y motor de validaciones.
+  - name: Catalog
+    description: Programas, planes de estudio y jornadas (lectura para estudiante).
+  - name: Curriculum
+    description: Materias, requisitos, electivas, profundizaciones y trabajo de grado (staff).
+  - name: Offerings
+    description: Periodos, ofertas, opciones de horario y sesiones (staff y lectura publicada).
+  - name: Imports
+    description: Carga masiva XLSX/JSON con prevalidación (staff).
+  - name: Administration
+    description: Staff, asignaciones, periodos, límites de créditos y dominios (admin).
+  - name: Audit
+    description: Eventos de auditoría funcional (admin global, staff por programa).
+
+security:
+  - sessionCookie: []
+
+paths:
+  # ----------------------------------------------------------------------------
+  # AUTH
+  # ----------------------------------------------------------------------------
+  /auth/registration:
+    post:
+      tags: [Auth]
+      summary: Registrar una cuenta de estudiante
+      description: |
+        Crea una cuenta de estudiante en estado pendiente de verificación. Solo se aceptan
+        correos cuyo dominio esté habilitado. La credencial se delega al
+        proveedor de identidad (Keycloak); el backend **no** almacena contraseñas.
+        Conserva evidencia de aceptación de términos y tratamiento de datos.
+      operationId: registerStudent
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentRegistrationRequest"
+      responses:
+        "202":
+          description: Registro aceptado; se envió un correo de verificación.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationAccepted"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: |
+            Conflicto. Correo ya registrado o dominio no habilitado, o reuso inválido
+            de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /auth/email-verifications/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirmar verificación de correo
+      description: Activa la cuenta a partir del token enviado por correo. Hasta verificar, el estudiante no puede configurar programas ni registrar historial.
+      operationId: confirmEmailVerification
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: { type: string, minLength: 16, maxLength: 512 }
+      responses:
+        "204": { description: Correo verificado; la cuenta queda activa. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "410":
+          description: Token expirado o ya utilizado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /auth/email-verifications/resend:
+    post:
+      tags: [Auth]
+      summary: Reenviar correo de verificación
+      operationId: resendEmailVerification
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email]
+              properties:
+                email: { $ref: "#/components/schemas/InstitutionalEmail" }
+      responses:
+        "202":
+          {
+            description: "Si el correo existe y no está verificado, se reenvía el mensaje.",
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /auth/password-recovery:
+    post:
+      tags: [Auth]
+      summary: Solicitar recuperación de contraseña
+      description: Inicia recuperación mediante enlace temporal a correo verificado. Responde siempre 202 para no revelar existencia de cuentas.
+      operationId: requestPasswordRecovery
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email]
+              properties:
+                email: { $ref: "#/components/schemas/InstitutionalEmail" }
+      responses:
+        "202":
+          {
+            description: "Si la cuenta existe y está verificada, se envía un enlace de recuperación.",
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /auth/password-recovery/confirm:
+    post:
+      tags: [Auth]
+      summary: Confirmar restablecimiento de contraseña
+      operationId: confirmPasswordRecovery
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token, newPassword]
+              properties:
+                token: { type: string, minLength: 16, maxLength: 512 }
+                newPassword:
+                  {
+                    type: string,
+                    format: password,
+                    minLength: 10,
+                    maxLength: 128,
+                  }
+      responses:
+        "204":
+          {
+            description: Contraseña restablecida (gestionada por el proveedor de identidad).,
+          }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "410":
+          description: Token expirado o ya utilizado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión
+      description: Invalida la sesión del backend y limpia la cookie de sesión.
+      operationId: logout
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Sesión cerrada. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ----------------------------------------------------------------------------
+  # PROFILE
+  # ----------------------------------------------------------------------------
+  /me:
+    get:
+      tags: [Profile]
+      summary: Perfil del usuario autenticado
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: Perfil del usuario en sesión.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /me/activity:
+    get:
+      tags: [Profile]
+      summary: Historial personal de acciones del estudiante
+      description: Registros propios relevantes (cambios de estado/nota, simulaciones, cambios de programa). Solo lectura.
+      operationId: listMyActivity
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+        - {
+            name: from,
+            in: query,
+            schema: { type: string, format: date-time },
+            description: Límite inferior de fecha (UTC).,
+          }
+        - {
+            name: to,
+            in: query,
+            schema: { type: string, format: date-time },
+            description: Límite superior de fecha (UTC).,
+          }
+      responses:
+        "200":
+          description: Página de eventos personales.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditEventPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ----------------------------------------------------------------------------
+  # SUBSCRIPTIONS (onboarding)
+  # ----------------------------------------------------------------------------
+  /me/subscriptions:
+    get:
+      tags: [Subscriptions]
+      summary: Listar suscripciones de planificación del estudiante
+      operationId: listMySubscriptions
+      responses:
+        "200":
+          description: Suscripciones activas (entre 1 y 2).
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 2
+                items: { $ref: "#/components/schemas/Subscription" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Subscriptions]
+      summary: Suscribirse a un programa
+      description: |
+        Asocia el estudiante a un programa, un plan activo y una jornada de
+        referencia. Máximo dos suscripciones activas; el tercer programa se
+        rechaza con `409`.
+      operationId: createSubscription
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubscriptionCreateRequest" }
+      responses:
+        "201":
+          description: Suscripción creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Subscription" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Límite de 2 suscripciones superado, programa ya suscrito, o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /me/subscriptions/{subscriptionId}:
+    parameters:
+      - $ref: "#/components/parameters/SubscriptionId"
+    get:
+      tags: [Subscriptions]
+      summary: Consultar una suscripción
+      operationId: getSubscription
+      responses:
+        "200":
+          description: Suscripción.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Subscription" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Subscriptions]
+      summary: Cambiar plan o jornada de referencia
+      description: Cambiar de plan tras registrar historial requiere confirmación de impacto; genera log. Bloqueo optimista por `version`.
+      operationId: updateSubscription
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubscriptionUpdateRequest" }
+      responses:
+        "200":
+          description: Suscripción actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Subscription" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [Subscriptions]
+      summary: Retirar una suscripción de planificación
+      description: Debe quedar al menos una suscripción activa. Conserva log e historial referenciado.
+      operationId: deleteSubscription
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Suscripción retirada. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: No puede retirarse la última suscripción activa.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /me/subscriptions/{subscriptionId}/progress:
+    parameters:
+      - $ref: "#/components/parameters/SubscriptionId"
+    get:
+      tags: [Progress]
+      summary: Resumen de avance y promedios estimados
+      description: Créditos aprobados/pendientes, % de avance, promedio histórico y por periodo. Todo etiquetado como estimado y autodeclarado.
+      operationId: getSubscriptionProgress
+      responses:
+        "200":
+          description: Resumen de avance.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgressSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /me/subscriptions/{subscriptionId}/curriculum:
+    parameters:
+      - $ref: "#/components/parameters/SubscriptionId"
+    get:
+      tags: [Progress]
+      summary: Malla curricular con estado por materia
+      description: |
+        Materias del plan organizadas por semestre recomendado según la jornada de referencia,
+        con el estado curricular del estudiante (PENDING, PASSED, FAILED, CANCELLED, AVAILABLE,
+        BLOCKED) y los requisitos cumplidos/faltantes.
+      operationId: getSubscriptionCurriculum
+      responses:
+        "200":
+          description: Malla con estado por materia.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurriculumView" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ----------------------------------------------------------------------------
+  # COURSE ATTEMPTS
+  # ----------------------------------------------------------------------------
+  /me/course-attempts:
+    get:
+      tags: [Progress]
+      summary: Listar intentos cursados del estudiante
+      operationId: listMyCourseAttempts
+      parameters:
+        - {
+            name: subscriptionId,
+            in: query,
+            schema: { type: string, format: uuid },
+            description: Filtrar por suscripción/programa.,
+          }
+        - {
+            name: courseId,
+            in: query,
+            schema: { type: string, format: uuid },
+            description: Filtrar por materia.,
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de intentos cursados.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseAttemptPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Progress]
+      summary: Registrar un intento cursado
+      description: |
+        Registra que el estudiante cursó una materia. Valida nota según estado:
+        PASSED ⇒ 3.0–5.0; FAILED ⇒ 0.0–2.9; CANCELLED ⇒ sin nota.
+        Idempotente para evitar doble historial.
+      operationId: createCourseAttempt
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseAttemptCreateRequest" }
+      responses:
+        "201":
+          description: Intento registrado; avance recalculado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseAttempt" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422":
+          description: Nota incoherente con el estado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /me/course-attempts/{attemptId}:
+    parameters:
+      - $ref: "#/components/parameters/AttemptId"
+    get:
+      tags: [Progress]
+      summary: Consultar un intento cursado
+      operationId: getCourseAttempt
+      responses:
+        "200":
+          description: Intento cursado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseAttempt" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Progress]
+      summary: Editar un intento cursado
+      description: Recalcula avance, promedios y validaciones; genera log. Bloqueo optimista por `version`.
+      operationId: updateCourseAttempt
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseAttemptUpdateRequest" }
+      responses:
+        "200":
+          description: Intento actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseAttempt" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+    delete:
+      tags: [Progress]
+      summary: Eliminar un intento cursado
+      description: Conserva log del cambio. Recalcula avance y promedios.
+      operationId: deleteCourseAttempt
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Intento eliminado. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ----------------------------------------------------------------------------
+  # SIMULATIONS
+  # ----------------------------------------------------------------------------
+  /me/simulations:
+    get:
+      tags: [Simulations]
+      summary: Listar simulaciones del estudiante
+      operationId: listMySimulations
+      parameters:
+        - {
+            name: periodId,
+            in: query,
+            schema: { type: string, format: uuid },
+            description: Filtrar por periodo académico.,
+          }
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/SimulationStatus" },
+            description: Filtrar por vigencia.,
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de simulaciones.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Simulations]
+      summary: Crear una simulación
+      description: Para un periodo futuro y uno o ambos programas suscritos. Idempotente.
+      operationId: createSimulation
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SimulationCreateRequest" }
+      responses:
+        "201":
+          description: Simulación creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /me/simulations/{simulationId}:
+    parameters:
+      - $ref: "#/components/parameters/SimulationId"
+    get:
+      tags: [Simulations]
+      summary: Consultar una simulación con horario y validación
+      description: Incluye selecciones, calendario semanal, resumen de créditos por programa y resultado de validación.
+      operationId: getSimulation
+      responses:
+        "200":
+          description: Simulación.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Simulations]
+      summary: Renombrar o ajustar metadatos de la simulación
+      operationId: updateSimulation
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SimulationUpdateRequest" }
+      responses:
+        "200":
+          description: Simulación actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [Simulations]
+      summary: Eliminar una simulación
+      description: Con confirmación; conserva log.
+      operationId: deleteSimulation
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Simulación eliminada. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /me/simulations/{simulationId}/duplications:
+    parameters:
+      - $ref: "#/components/parameters/SimulationId"
+    post:
+      tags: [Simulations]
+      summary: Duplicar una simulación
+      description: Crea una copia editable para comparar alternativas. Idempotente.
+      operationId: duplicateSimulation
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  {
+                    type: string,
+                    minLength: 1,
+                    maxLength: 120,
+                    description: "Nombre de la copia. Si se omite, se deriva del original.",
+                  }
+      responses:
+        "201":
+          description: Simulación duplicada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /me/simulations/{simulationId}/review:
+    parameters:
+      - $ref: "#/components/parameters/SimulationId"
+    post:
+      tags: [Simulations]
+      summary: Marcar como revisada una simulación desactualizada
+      description: Tras revisar los cambios de oferta, el estudiante reconfirma la simulación; vuelve a `CURRENT` si ya no hay choques ni bloqueos.
+      operationId: reviewSimulation
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "200":
+          description: Resultado de la revalidación.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Persisten bloqueos (choque/crédito/requisito); no puede marcarse como vigente.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /me/simulations/{simulationId}/selections:
+    parameters:
+      - $ref: "#/components/parameters/SimulationId"
+    get:
+      tags: [Simulations]
+      summary: Listar selecciones de una simulación
+      operationId: listSimulationSelections
+      responses:
+        "200":
+          description: Selecciones actuales.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SimulationSelection" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Simulations]
+      summary: Agregar una opción de horario a la simulación
+      description: |
+        Ejecuta las validaciones bloqueantes antes de agregar : materia ya aprobada
+        , prerrequisito no cumplido, créditos mínimos, secuencia de
+        electiva/profundización, choque horario, límite de créditos por
+        programa, duplicidad y oferta archivada. Un bloqueo
+        responde `409` con `problem+json`. Las advertencias no bloqueantes se
+        devuelven en el cuerpo de la selección creada.
+      operationId: addSimulationSelection
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/SimulationSelectionCreateRequest" }
+      responses:
+        "201":
+          description: Selección agregada (puede incluir advertencias no bloqueantes).
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SimulationSelection" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: Validación bloqueante o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+              examples:
+                prerequisiteNotMet:
+                  summary: Prerrequisito no cumplido
+                  value:
+                    type: https://errors.local/academic/prerequisite-not-met
+                    title: Prerrequisito no cumplido
+                    status: 409
+                    code: SIMULATION_PREREQUISITE_NOT_MET
+                    detail: No puedes agregar Bases de Datos porque no registras Programación II como aprobada.
+                    metadata: { requiredCourseName: Programación II }
+                scheduleClash:
+                  summary: Choque horario
+                  value:
+                    type: https://errors.local/academic/schedule-clash
+                    title: Choque de horario
+                    status: 409
+                    code: SIMULATION_SCHEDULE_CLASH
+                    detail: Programación I coincide con Francés II el miércoles entre las 18:00 y las 20:00.
+                    metadata:
+                      {
+                        day: WEDNESDAY,
+                        startsAt: "18:00",
+                        endsAt: "20:00",
+                        conflictingCourseName: Francés II,
+                      }
+                creditLimitExceeded:
+                  summary: Límite de créditos por programa
+                  value:
+                    type: https://errors.local/academic/credit-limit-exceeded
+                    title: Límite de créditos excedido
+                    status: 409
+                    code: SIMULATION_CREDIT_LIMIT_EXCEEDED
+                    detail: Alcanzarías 25 créditos en Ingeniería de Sistemas y Computación; el límite es 23.
+                    metadata:
+                      {
+                        programName: Ingeniería de Sistemas y Computación,
+                        attemptedCredits: 25,
+                        creditLimit: 23,
+                      }
+
+  /me/simulations/{simulationId}/selections/{selectionId}:
+    parameters:
+      - $ref: "#/components/parameters/SimulationId"
+      - $ref: "#/components/parameters/SelectionId"
+    delete:
+      tags: [Simulations]
+      summary: Quitar una selección de la simulación
+      operationId: removeSimulationSelection
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204":
+          { description: Selección eliminada; resumen de créditos recalculado. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ----------------------------------------------------------------------------
+  # CATALOG — programs / journeys / plans
+  # ----------------------------------------------------------------------------
+  /programs:
+    get:
+      tags: [Catalog]
+      summary: Listar programas
+      description: El estudiante ve programas activos disponibles para suscripción; staff/admin pueden filtrar por estado.
+      operationId: listPrograms
+      parameters:
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/ProgramStatus" },
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de programas.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProgramPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /programs/{programId}:
+    parameters:
+      - $ref: "#/components/parameters/ProgramId"
+    get:
+      tags: [Catalog]
+      summary: Consultar un programa
+      operationId: getProgram
+      responses:
+        "200":
+          description: Programa.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Program" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /programs/{programId}/plans:
+    parameters:
+      - $ref: "#/components/parameters/ProgramId"
+    get:
+      tags: [Catalog]
+      summary: Listar planes de estudio de un programa
+      description: El estudiante solo ve planes activos.
+      operationId: listProgramPlans
+      parameters:
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/PlanStatus" },
+          }
+      responses:
+        "200":
+          description: Planes del programa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StudyPlan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /plans/{planId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Catalog]
+      summary: Consultar un plan de estudios
+      operationId: getStudyPlan
+      responses:
+        "200":
+          description: Plan de estudios.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyPlan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /journeys:
+    get:
+      tags: [Catalog]
+      summary: Listar jornadas configurables
+      operationId: listJourneys
+      responses:
+        "200":
+          description: Jornadas activas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Journey" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /staff/programs/{programId}/plans:
+    parameters:
+      - $ref: "#/components/parameters/ProgramId"
+    post:
+      tags: [Curriculum]
+      summary: Crear un plan de estudios
+      description: Solo staff con asignación activa al programa. Idempotente.
+      operationId: createStudyPlan
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyPlanCreateRequest" }
+      responses:
+        "201":
+          description: Plan creado en estado BORRADOR.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyPlan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /staff/plans/{planId}:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    patch:
+      tags: [Curriculum]
+      summary: Editar un plan de estudios
+      operationId: updateStudyPlan
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudyPlanUpdateRequest" }
+      responses:
+        "200":
+          description: Plan actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyPlan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /staff/plans/{planId}/publication:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      tags: [Curriculum]
+      summary: Publicar o archivar un plan
+      description: Transición de estado (ACTIVE/ARCHIVED). Genera log.
+      operationId: changeStudyPlanStatus
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [targetStatus, version]
+              properties:
+                targetStatus: { type: string, enum: [ACTIVE, ARCHIVED] }
+                version: { $ref: "#/components/schemas/Version" }
+      responses:
+        "200":
+          description: Estado del plan actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudyPlan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  # ----------------------------------------------------------------------------
+  # CURRICULUM — courses / requirements / tracks / degree-work
+  # ----------------------------------------------------------------------------
+  /plans/{planId}/courses:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Curriculum]
+      summary: Listar materias de un plan
+      operationId: listPlanCourses
+      parameters:
+        - {
+            name: type,
+            in: query,
+            schema: { $ref: "#/components/schemas/CourseType" },
+          }
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/CourseStatus" },
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de materias.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoursePage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/plans/{planId}/courses:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      tags: [Curriculum]
+      summary: Crear materia curricular
+      description: Nombre, tipo y créditos obligatorios; créditos no negativos. Identificador interno automático. Idempotente.
+      operationId: createCourse
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseCreateRequest" }
+      responses:
+        "201":
+          description: Materia creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /courses/{courseId}:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [Curriculum]
+      summary: Consultar una materia
+      operationId: getCourse
+      responses:
+        "200":
+          description: Materia.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/courses/{courseId}:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    patch:
+      tags: [Curriculum]
+      summary: Editar una materia
+      operationId: updateCourse
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseUpdateRequest" }
+      responses:
+        "200":
+          description: Materia actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /staff/courses/{courseId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    post:
+      tags: [Curriculum]
+      summary: Archivar una materia
+      description: No se elimina físicamente; se archiva conservando referencias históricas.
+      operationId: archiveCourse
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VersionedAction" }
+      responses:
+        "200":
+          description: Materia archivada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Course" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /courses/{courseId}/requirements:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    get:
+      tags: [Curriculum]
+      summary: Listar requisitos de una materia
+      operationId: listCourseRequirements
+      responses:
+        "200":
+          description: Requisitos de la materia.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CourseRequirement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/courses/{courseId}/requirements:
+    parameters:
+      - $ref: "#/components/parameters/CourseId"
+    post:
+      tags: [Curriculum]
+      summary: Definir un requisito
+      description: Una materia no puede requerirse a sí misma (RN); el sistema advierte ciclos lógicos. Tipos.
+      operationId: createCourseRequirement
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/CourseRequirementCreateRequest" }
+      responses:
+        "201":
+          description: Requisito creado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseRequirement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: Auto-requisito o ciclo de prerrequisitos detectado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /staff/requirements/{requirementId}:
+    parameters:
+      - $ref: "#/components/parameters/RequirementId"
+    patch:
+      tags: [Curriculum]
+      summary: Editar un requisito
+      operationId: updateCourseRequirement
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/CourseRequirementUpdateRequest" }
+      responses:
+        "200":
+          description: Requisito actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CourseRequirement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [Curriculum]
+      summary: Eliminar un requisito
+      operationId: deleteCourseRequirement
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Requisito eliminado. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /plans/{planId}/sequential-tracks:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Curriculum]
+      summary: Listar espacios secuenciales (electivas y profundizaciones)
+      description: Espacios con niveles y opciones reales; formato "Electiva I (Nombre real)" / "Profundización II (Nombre real)".
+      operationId: listSequentialTracks
+      parameters:
+        - {
+            name: kind,
+            in: query,
+            schema: { $ref: "#/components/schemas/SequentialTrackKind" },
+          }
+      responses:
+        "200":
+          description: Espacios secuenciales del plan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SequentialTrack" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/plans/{planId}/sequential-tracks:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      tags: [Curriculum]
+      summary: Crear un espacio secuencial
+      description: Define número de niveles y si dos niveles consecutivos pueden simularse simultáneamente. La simultaneidad se configura por plan, no global.
+      operationId: createSequentialTrack
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/SequentialTrackCreateRequest" }
+      responses:
+        "201":
+          description: Espacio secuencial creado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SequentialTrack" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /staff/sequential-tracks/{trackId}:
+    parameters:
+      - $ref: "#/components/parameters/TrackId"
+    patch:
+      tags: [Curriculum]
+      summary: Editar un espacio secuencial
+      operationId: updateSequentialTrack
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/SequentialTrackUpdateRequest" }
+      responses:
+        "200":
+          description: Espacio secuencial actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SequentialTrack" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /plans/{planId}/degree-work-modalities:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Curriculum]
+      summary: Listar modalidades de trabajo de grado
+      operationId: listDegreeWorkModalities
+      responses:
+        "200":
+          description: Modalidades del plan.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/DegreeWorkModality" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/plans/{planId}/degree-work-modalities:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    post:
+      tags: [Curriculum]
+      summary: Crear una modalidad de trabajo de grado
+      description: Cada modalidad puede tener créditos, requisitos e intensidad propios. No equivalentes entre programas.
+      operationId: createDegreeWorkModality
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/DegreeWorkModalityCreateRequest" }
+      responses:
+        "201":
+          description: Modalidad creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DegreeWorkModality" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /staff/degree-work-modalities/{modalityId}:
+    parameters:
+      - $ref: "#/components/parameters/ModalityId"
+    patch:
+      tags: [Curriculum]
+      summary: Editar o archivar una modalidad de trabajo de grado
+      operationId: updateDegreeWorkModality
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              { $ref: "#/components/schemas/DegreeWorkModalityUpdateRequest" }
+      responses:
+        "200":
+          description: Modalidad actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DegreeWorkModality" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  # ----------------------------------------------------------------------------
+  # OFFERINGS — periods / offerings / schedule options
+  # ----------------------------------------------------------------------------
+  /periods:
+    get:
+      tags: [Offerings]
+      summary: Listar periodos académicos
+      operationId: listPeriods
+      parameters:
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/PeriodStatus" },
+          }
+      responses:
+        "200":
+          description: Periodos académicos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AcademicPeriod" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /offerings:
+    get:
+      tags: [Offerings]
+      summary: Listar ofertas publicadas
+      description: El estudiante solo ve ofertas PRELIMINARY/FINAL. Staff/admin pueden ver borradores de sus programas.
+      operationId: listOfferings
+      parameters:
+        - {
+            name: periodId,
+            in: query,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - { name: programId, in: query, schema: { type: string, format: uuid } }
+        - { name: courseId, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/OfferingStatus" },
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de ofertas.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OfferingPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /offerings/{offeringId}:
+    parameters:
+      - $ref: "#/components/parameters/OfferingId"
+    get:
+      tags: [Offerings]
+      summary: Consultar una oferta con sus opciones de horario
+      operationId: getOffering
+      responses:
+        "200":
+          description: Oferta.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OfferingDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/programs/{programId}/offerings:
+    parameters:
+      - $ref: "#/components/parameters/ProgramId"
+    post:
+      tags: [Offerings]
+      summary: Crear una oferta de materia por periodo
+      description: Solo sobre materias activas y periodos habilitados. Staff con asignación activa. Idempotente.
+      operationId: createOffering
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OfferingCreateRequest" }
+      responses:
+        "201":
+          description: Oferta creada en estado DRAFT.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OfferingDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /staff/offerings/{offeringId}:
+    parameters:
+      - $ref: "#/components/parameters/OfferingId"
+    patch:
+      tags: [Offerings]
+      summary: Editar una oferta
+      description: Modificar una oferta ya seleccionada marca las simulaciones afectadas como desactualizadas. Bloqueo optimista.
+      operationId: updateOffering
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OfferingUpdateRequest" }
+      responses:
+        "200":
+          description: Oferta actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OfferingDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /staff/offerings/{offeringId}/publication:
+    parameters:
+      - $ref: "#/components/parameters/OfferingId"
+    post:
+      tags: [Offerings]
+      summary: Publicar o archivar una oferta
+      description: |
+        Transición a PRELIMINARY, FINAL o ARCHIVED. No puede publicarse sin opción de horario
+        (RN). Si la suma semanal no coincide con la intensidad curricular, se
+        advierte pero no se bloquea. Publicar es acción expresa y
+        genera log. Idempotente.
+      operationId: publishOffering
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [targetStatus, version]
+              properties:
+                targetStatus:
+                  { type: string, enum: [PRELIMINARY, FINAL, ARCHIVED] }
+                version: { $ref: "#/components/schemas/Version" }
+                acknowledgeIntensityWarning:
+                  type: boolean
+                  default: false
+                  description: Confirma publicar pese a la advertencia de intensidad no coincidente.
+      responses:
+        "200":
+          description: Oferta publicada/archivada; simulaciones afectadas marcadas.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OfferingDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+        "422":
+          description: No puede publicarse sin opción de horario válida.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /staff/offerings/{offeringId}/schedule-options:
+    parameters:
+      - $ref: "#/components/parameters/OfferingId"
+    post:
+      tags: [Offerings]
+      summary: Agregar una opción de horario
+      description: Cada opción tiene jornada y mínimo una sesión; la hora final debe ser posterior a la inicial. El sistema calcula las horas semanales.
+      operationId: createScheduleOption
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleOptionCreateRequest" }
+      responses:
+        "201":
+          description: Opción de horario creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: Opción sin sesiones, hora final no posterior a la inicial, o día inválido.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /staff/schedule-options/{optionId}:
+    parameters:
+      - $ref: "#/components/parameters/OptionId"
+    patch:
+      tags: [Offerings]
+      summary: Editar una opción de horario
+      operationId: updateScheduleOption
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleOptionUpdateRequest" }
+      responses:
+        "200":
+          description: Opción actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [Offerings]
+      summary: Eliminar una opción de horario (borrador)
+      operationId: deleteScheduleOption
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Opción eliminada. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: No puede eliminarse la última opción de una oferta publicada.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  # ----------------------------------------------------------------------------
+  # IMPORTS
+  # ----------------------------------------------------------------------------
+  /staff/imports:
+    get:
+      tags: [Imports]
+      summary: Listar importaciones del staff
+      operationId: listImports
+      parameters:
+        - {
+            name: kind,
+            in: query,
+            schema: { $ref: "#/components/schemas/ImportKind" },
+          }
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/ImportStatus" },
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de importaciones.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Imports]
+      summary: Subir un archivo de importación
+      description: |
+        Sube XLSX o JSON para materias u ofertas. El sistema valida tipo y tamaño (≤5 MB sugerido),
+        analiza estructura y devuelve un resumen de registros válidos, advertencias y
+        errores **sin publicar nada**. Idempotente para evitar procesamiento
+        doble.
+      operationId: uploadImport
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [kind, programId, file]
+              properties:
+                kind: { $ref: "#/components/schemas/ImportKind" }
+                programId: { type: string, format: uuid }
+                planId:
+                  {
+                    type: string,
+                    format: uuid,
+                    description: Requerido para importación de materias/requisitos.,
+                  }
+                periodId:
+                  {
+                    type: string,
+                    format: uuid,
+                    description: Requerido para importación de ofertas.,
+                  }
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo.xlsx o.json (.xls/.xlsm/.csv no permitidos).
+            encoding:
+              file:
+                contentType: >-
+                  application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json
+      responses:
+        "201":
+          description: Importación recibida en estado borrador con resumen de validación.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422":
+          description: Estructura inválida; el detalle enumera errores y advertencias.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /staff/imports/{importId}:
+    parameters:
+      - $ref: "#/components/parameters/ImportId"
+    get:
+      tags: [Imports]
+      summary: Consultar el resultado de una importación
+      operationId: getImport
+      responses:
+        "200":
+          description: Resumen de la importación con errores y advertencias.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /staff/imports/{importId}/confirmation:
+    parameters:
+      - $ref: "#/components/parameters/ImportId"
+    post:
+      tags: [Imports]
+      summary: Confirmar una importación válida
+      description: Guarda los datos como borrador editable (no publica). Genera log. Idempotente.
+      operationId: confirmImport
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VersionedAction" }
+      responses:
+        "200":
+          description: Importación confirmada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: La importación tiene errores y no puede confirmarse, o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  # ----------------------------------------------------------------------------
+  # ADMINISTRATION
+  # ----------------------------------------------------------------------------
+  /admin/programs:
+    post:
+      tags: [Administration]
+      summary: Crear un programa académico
+      description: Nombre obligatorio; no se permiten dos programas activos idénticos (RN). Solo ADMIN. Genera log.
+      operationId: createProgram
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProgramCreateRequest" }
+      responses:
+        "201":
+          description: Programa creado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Program" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Programa activo duplicado o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/programs/{programId}:
+    parameters:
+      - $ref: "#/components/parameters/ProgramId"
+    patch:
+      tags: [Administration]
+      summary: Editar o archivar un programa
+      operationId: updateProgram
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProgramUpdateRequest" }
+      responses:
+        "200":
+          description: Programa actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Program" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /admin/journeys:
+    post:
+      tags: [Administration]
+      summary: Crear una jornada configurable
+      operationId: createJourney
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JourneyCreateRequest" }
+      responses:
+        "201":
+          description: Jornada creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Journey" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Código de jornada duplicado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/staff:
+    get:
+      tags: [Administration]
+      summary: Listar cuentas staff
+      operationId: listStaff
+      parameters:
+        - {
+            name: status,
+            in: query,
+            schema: { $ref: "#/components/schemas/AccountStatus" },
+          }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de cuentas staff.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Administration]
+      summary: Crear una cuenta staff
+      description: Solo ADMIN. Idempotente para evitar alta duplicada. Genera log.
+      operationId: createStaff
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffCreateRequest" }
+      responses:
+        "201":
+          description: Cuenta staff creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Correo ya registrado o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/staff/{staffId}:
+    parameters:
+      - $ref: "#/components/parameters/StaffId"
+    get:
+      tags: [Administration]
+      summary: Consultar una cuenta staff
+      operationId: getStaff
+      responses:
+        "200":
+          description: Cuenta staff.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Administration]
+      summary: Activar o desactivar una cuenta staff
+      operationId: updateStaff
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffUpdateRequest" }
+      responses:
+        "200":
+          description: Cuenta staff actualizada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /admin/staff/{staffId}/assignments:
+    parameters:
+      - $ref: "#/components/parameters/StaffId"
+    get:
+      tags: [Administration]
+      summary: Listar asignaciones de programas del staff
+      operationId: listStaffAssignments
+      responses:
+        "200":
+          description: Asignaciones del staff.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StaffAssignment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Administration]
+      summary: Asignar un programa al staff
+      operationId: assignProgramToStaff
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [programId]
+              properties:
+                programId: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Asignación creada.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: El staff ya está asignado a ese programa.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/staff/{staffId}/assignments/{assignmentId}:
+    parameters:
+      - $ref: "#/components/parameters/StaffId"
+      - $ref: "#/components/parameters/AssignmentId"
+    delete:
+      tags: [Administration]
+      summary: Retirar una asignación de programa
+      operationId: revokeStaffAssignment
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Asignación retirada; genera log. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/periods:
+    post:
+      tags: [Administration]
+      summary: Crear un periodo académico
+      description: No se permiten periodos duplicados. Solo periodos habilitados permiten crear ofertas. Idempotente.
+      operationId: createPeriod
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcademicPeriodCreateRequest" }
+      responses:
+        "201":
+          description: Periodo creado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AcademicPeriod" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Periodo duplicado o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/periods/{periodId}:
+    parameters:
+      - $ref: "#/components/parameters/PeriodId"
+    patch:
+      tags: [Administration]
+      summary: Editar o archivar un periodo
+      operationId: updatePeriod
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AcademicPeriodUpdateRequest" }
+      responses:
+        "200":
+          description: Periodo actualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AcademicPeriod" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+
+  /admin/credit-limits:
+    get:
+      tags: [Administration]
+      summary: Listar límites de créditos
+      operationId: listCreditLimits
+      parameters:
+        - { name: programId, in: query, schema: { type: string, format: uuid } }
+        - { name: periodId, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Límites de créditos configurados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CreditLimit" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [Administration]
+      summary: Configurar el límite de créditos por programa y periodo
+      description: |
+        Valor inicial sugerido 23, configurable. Cambiar el límite
+        obliga a reevaluar simulaciones existentes y marcarlas si quedan inválidas.
+        Bloqueo optimista por `version`.
+      operationId: setCreditLimit
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreditLimitUpsertRequest" }
+      responses:
+        "200":
+          description: Límite configurado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreditLimit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+
+  /admin/allowed-email-domains:
+    get:
+      tags: [Administration]
+      summary: Listar dominios de correo permitidos
+      operationId: listAllowedEmailDomains
+      responses:
+        "200":
+          description: Dominios habilitados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AllowedEmailDomain" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Administration]
+      summary: Habilitar un dominio de correo institucional
+      operationId: addAllowedEmailDomain
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [domain]
+              properties:
+                domain:
+                  {
+                    type: string,
+                    format: hostname,
+                    examples: [uniquindio.edu.co],
+                  }
+      responses:
+        "201":
+          description: Dominio habilitado.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AllowedEmailDomain" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Dominio ya habilitado.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  /admin/allowed-email-domains/{domainId}:
+    parameters:
+      - $ref: "#/components/parameters/DomainId"
+    delete:
+      tags: [Administration]
+      summary: Deshabilitar un dominio de correo
+      operationId: removeAllowedEmailDomain
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "204": { description: Dominio deshabilitado. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ----------------------------------------------------------------------------
+  # AUDIT
+  # ----------------------------------------------------------------------------
+  /admin/audit-events:
+    get:
+      tags: [Audit]
+      summary: Consultar auditoría global
+      description: Solo ADMIN. Eventos inmutables.
+      operationId: listGlobalAuditEvents
+      parameters:
+        - {
+            name: actorRole,
+            in: query,
+            schema: { $ref: "#/components/schemas/UserRole" },
+          }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: entityType, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de eventos de auditoría.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditEventPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /staff/audit-events:
+    get:
+      tags: [Audit]
+      summary: Consultar logs de cambios curriculares del programa
+      description: Staff con asignación activa; solo eventos de sus programas asignados.
+      operationId: listProgramAuditEvents
+      parameters:
+        - {
+            name: programId,
+            in: query,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/SizeParam"
+        - $ref: "#/components/parameters/SortParam"
+      responses:
+        "200":
+          description: Página de eventos del programa.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditEventPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: SESSION
+      description: |
+        Sesión administrada por el backend mediante cookie HttpOnly (Spring Session JDBC),
+        emitida tras el flujo OIDC con Keycloak. La SPA no almacena access tokens
+        . Las operaciones de escritura exigen además la cabecera CSRF `X-XSRF-TOKEN`.
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Número de página (0-based).
+      schema: { type: integer, minimum: 0, default: 0 }
+    SizeParam:
+      name: size
+      in: query
+      description: Tamaño de página.
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    SortParam:
+      name: sort
+      in: query
+      description: "Ordenamiento `campo,(asc|desc)`. Puede repetirse."
+      style: form
+      explode: true
+      schema:
+        type: array
+        items: { type: string }
+      example: ["createdAt,desc"]
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Clave única del comando; reintentos con misma clave y cuerpo devuelven el resultado previo.
+      schema: { type: string, format: uuid }
+    CsrfToken:
+      name: X-XSRF-TOKEN
+      in: header
+      required: true
+      description: Token CSRF para operaciones de escritura.
+      schema: { type: string }
+    SubscriptionId:
+      name: subscriptionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SimulationId:
+      name: simulationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SelectionId:
+      name: selectionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProgramId:
+      name: programId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RequirementId:
+      name: requirementId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TrackId:
+      name: trackId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ModalityId:
+      name: modalityId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OfferingId:
+      name: offeringId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OptionId:
+      name: optionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PeriodId:
+      name: periodId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    StaffId:
+      name: staffId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    AssignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DomainId:
+      name: domainId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  headers:
+    Location:
+      description: URI del recurso creado.
+      schema: { type: string, format: uri-reference }
+
+  responses:
+    BadRequest:
+      description: Solicitud malformada o parámetros inválidos.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    Unauthorized:
+      description: No autenticado o sesión expirada.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    Forbidden:
+      description: Autenticado pero sin permiso para el recurso (rol o propiedad).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    NotFound:
+      description: Recurso inexistente o no visible para el usuario.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    VersionConflict:
+      description: Conflicto de concurrencia; la versión enviada es anterior a la persistida.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+          example:
+            type: https://errors.local/concurrency/version-conflict
+            title: Conflicto de versión
+            status: 409
+            code: OPTIMISTIC_LOCK_CONFLICT
+            detail: El recurso fue modificado por otra operación. Recarga y vuelve a intentar.
+    UnprocessableEntity:
+      description: Entidad sintácticamente válida pero que viola una regla de negocio.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    PayloadTooLarge:
+      description: Archivo de importación supera el tamaño máximo.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+    UnsupportedMediaType:
+      description: Formato de archivo no permitido (solo.xlsx o.json).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetail" }
+
+  schemas:
+    # --- Primitivos / comunes ------------------------------------------------
+    Version:
+      type: integer
+      format: int64
+      minimum: 0
+      description: Versión para bloqueo optimista.
+    InstitutionalEmail:
+      type: string
+      format: email
+      maxLength: 254
+      description: Correo institucional con dominio habilitado.
+      examples: [estudiante@uniquindio.edu.co]
+    Grade:
+      type: number
+      format: double
+      minimum: 0.0
+      maximum: 5.0
+      multipleOf: 0.1
+      description: Nota definitiva 0.0–5.0 con una cifra decimal.
+    Weekday:
+      type: string
+      enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+    LocalTime:
+      type: string
+      pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+      description: Hora local HH:mm de 24 horas.
+      examples: ["18:00"]
+    UserRole:
+      type: string
+      enum: [STUDENT, STAFF, ADMIN]
+      description: Roles globales.
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, PENDING_VERIFICATION]
+    ProgramStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+    PlanStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, ARCHIVED]
+      description: Borrador, activo o archivado.
+    CourseType:
+      type: string
+      enum:
+        [
+          REQUIRED,
+          PERSONAL_ELECTIVE,
+          DEEPENING,
+          DEGREE_WORK,
+          INSTITUTIONAL,
+          OPTIONAL,
+        ]
+      description: Tipos de materia.
+    CourseStatus:
+      type: string
+      enum: [ACTIVE, INACTIVE, ARCHIVED]
+      description: Estado de materia.
+    RequirementType:
+      type: string
+      enum: [COURSE_PASSED, SEQUENCE, MINIMUM_CREDITS, CONFIGURABLE]
+      description: Tipos de requisito.
+    SequentialTrackKind:
+      type: string
+      enum: [PERSONAL_ELECTIVE, DEEPENING]
+    PeriodStatus:
+      type: string
+      enum: [UPCOMING, ACTIVE, CLOSED, ARCHIVED]
+      description: Próximo, activo, cerrado o archivado.
+    OfferingStatus:
+      type: string
+      enum: [DRAFT, PRELIMINARY, FINAL, ARCHIVED]
+      description: Estados de publicación de oferta.
+    AttemptStatus:
+      type: string
+      enum: [PASSED, FAILED, CANCELLED]
+      description: Estados de intento cursado.
+    CourseProgressStatus:
+      type: string
+      enum: [PENDING, PASSED, FAILED, CANCELLED, AVAILABLE, BLOCKED]
+      description: Estado curricular visual.
+    SimulationStatus:
+      type: string
+      enum: [CURRENT, OUTDATED]
+      description: Vigente o desactualizada.
+    ImportKind:
+      type: string
+      enum: [COURSES, REQUIREMENTS, OFFERINGS]
+    ImportStatus:
+      type: string
+      enum: [VALIDATED, INVALID, CONFIRMED]
+    VersionedAction:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        version: { $ref: "#/components/schemas/Version" }
+
+    ProblemDetail:
+      type: object
+      description: Error conforme a RFC 9457 (application/problem+json) con extensiones.
+      properties:
+        type: { type: string, format: uri, default: about:blank }
+        title: { type: string }
+        status: { type: integer, minimum: 100, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+        code:
+          type: string
+          description: Código estable de error de dominio (p. ej. SIMULATION_SCHEDULE_CLASH).
+        errors:
+          type: array
+          description: Errores de validación por campo.
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Datos contextuales para componer el mensaje al usuario.
+      required: [title, status]
+
+    PageMeta:
+      type: object
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+
+    # --- Identity / profile --------------------------------------------------
+    CurrentUser:
+      type: object
+      required: [id, fullName, email, role, status, onboardingCompleted]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { $ref: "#/components/schemas/InstitutionalEmail" }
+        role: { $ref: "#/components/schemas/UserRole" }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        onboardingCompleted: { type: boolean }
+        assignedProgramIds:
+          type: array
+          description: Programas asignados (solo STAFF).
+          items: { type: string, format: uuid }
+
+    StudentRegistrationRequest:
+      type: object
+      additionalProperties: false
+      required:
+        [fullName, email, password, acceptedTerms, acceptedDataProcessing]
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 160 }
+        email: { $ref: "#/components/schemas/InstitutionalEmail" }
+        password:
+          { type: string, format: password, minLength: 10, maxLength: 128 }
+        passwordConfirmation:
+          { type: string, format: password, minLength: 10, maxLength: 128 }
+        acceptedTerms:
+          type: boolean
+          const: true
+          description: Aceptación de términos de uso.
+        acceptedDataProcessing:
+          type: boolean
+          const: true
+          description: Aceptación de tratamiento de datos personales.
+
+    RegistrationAccepted:
+      type: object
+      required: [userId, status]
+      properties:
+        userId: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        message:
+          type: string
+          examples:
+            [
+              "Te enviamos un correo de verificación. Revisa tu bandeja para activar la cuenta.",
+            ]
+
+    # --- Subscriptions -------------------------------------------------------
+    Subscription:
+      type: object
+      required:
+        [
+          id,
+          programId,
+          programName,
+          planId,
+          planName,
+          referenceJourney,
+          version,
+          createdAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        programId: { type: string, format: uuid }
+        programName: { type: string }
+        planId: { type: string, format: uuid }
+        planName: { type: string }
+        referenceJourney:
+          $ref: "#/components/schemas/JourneyRef"
+        version: { $ref: "#/components/schemas/Version" }
+        createdAt: { type: string, format: date-time }
+    SubscriptionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [programId, planId, referenceJourneyCode]
+      properties:
+        programId: { type: string, format: uuid }
+        planId: { type: string, format: uuid }
+        referenceJourneyCode:
+          {
+            type: string,
+            description: Código de jornada de referencia.,
+          }
+    SubscriptionUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        planId:
+          {
+            type: string,
+            format: uuid,
+            description: "Nuevo plan (requiere confirmación de impacto).",
+          }
+        referenceJourneyCode: { type: string }
+        acknowledgeHistoryImpact:
+          type: boolean
+          default: false
+          description: Confirma que entiende el impacto del cambio de plan en historial y simulaciones.
+        version: { $ref: "#/components/schemas/Version" }
+
+    # --- Progress ------------------------------------------------------------
+    ProgressSummary:
+      type: object
+      description: Resumen de avance estimado y autodeclarado.
+      required:
+        [
+          subscriptionId,
+          programName,
+          totalPlanCredits,
+          approvedCredits,
+          pendingCredits,
+          progressPercentage,
+          passedCourses,
+          pendingFailedCourses,
+          disclaimer,
+        ]
+      properties:
+        subscriptionId: { type: string, format: uuid }
+        programName: { type: string }
+        totalPlanCredits: { type: number, format: double, minimum: 0 }
+        approvedCredits: { type: number, format: double, minimum: 0 }
+        pendingCredits: { type: number, format: double, minimum: 0 }
+        progressPercentage:
+          { type: number, format: double, minimum: 0, maximum: 100 }
+        passedCourses: { type: integer, minimum: 0 }
+        pendingFailedCourses:
+          type: integer
+          minimum: 0
+          description: Materias reprobadas pendientes de repetición.
+        estimatedHistoricalAverage:
+          type: [number, "null"]
+          format: double
+          minimum: 0.0
+          maximum: 5.0
+          description: Promedio histórico estimado del programa.
+        averagesByPeriod:
+          type: array
+          items: { $ref: "#/components/schemas/PeriodAverage" }
+        disclaimer:
+          type: string
+          examples:
+            [
+              "Promedio estimado basado en información que registraste; no es oficial.",
+            ]
+    PeriodAverage:
+      type: object
+      required: [periodId, periodName, estimatedAverage]
+      properties:
+        periodId: { type: string, format: uuid }
+        periodName: { type: string, examples: ["2026-1"] }
+        estimatedAverage:
+          { type: number, format: double, minimum: 0.0, maximum: 5.0 }
+
+    CurriculumView:
+      type: object
+      required: [subscriptionId, referenceJourney, semesters]
+      properties:
+        subscriptionId: { type: string, format: uuid }
+        referenceJourney: { $ref: "#/components/schemas/JourneyRef" }
+        semesters:
+          type: array
+          items:
+            type: object
+            required: [recommendedSemester, courses]
+            properties:
+              recommendedSemester: { type: integer, minimum: 1 }
+              courses:
+                type: array
+                items: { $ref: "#/components/schemas/CurriculumCourse" }
+    CurriculumCourse:
+      type: object
+      required: [courseId, name, credits, type, progressStatus]
+      properties:
+        courseId: { type: string, format: uuid }
+        officialCode: { type: [string, "null"] }
+        name: { type: string }
+        credits: { type: number, format: double, minimum: 0 }
+        type: { $ref: "#/components/schemas/CourseType" }
+        progressStatus: { $ref: "#/components/schemas/CourseProgressStatus" }
+        unmetRequirements:
+          type: array
+          description: Requisitos faltantes cuando el estado es BLOCKED.
+          items: { type: string }
+
+    CourseAttempt:
+      type: object
+      required:
+        [
+          id,
+          subscriptionId,
+          courseId,
+          courseName,
+          periodId,
+          journeyCode,
+          status,
+          registeredAt,
+          version,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        subscriptionId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseName: { type: string }
+        periodId: { type: string, format: uuid }
+        periodName: { type: string }
+        journeyCode:
+          { type: string, description: Jornada real cursada. }
+        status: { $ref: "#/components/schemas/AttemptStatus" }
+        finalGrade:
+          anyOf: [{ $ref: "#/components/schemas/Grade" }, { type: "null" }]
+          description: Requerida para PASSED/FAILED, nula para CANCELLED.
+        registeredAt: { type: string, format: date-time }
+        version: { $ref: "#/components/schemas/Version" }
+    CourseAttemptCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [subscriptionId, courseId, periodId, journeyCode, status]
+      properties:
+        subscriptionId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        journeyCode: { type: string }
+        status: { $ref: "#/components/schemas/AttemptStatus" }
+        finalGrade:
+          anyOf: [{ $ref: "#/components/schemas/Grade" }, { type: "null" }]
+      examples:
+        - subscriptionId: 3f3f0000-0000-4000-8000-0000000000e1
+          courseId: a1a10000-0000-4000-8000-000000000077
+          periodId: c2c20000-0000-4000-8000-000000000090
+          journeyCode: NOCTURNA
+          status: PASSED
+          finalGrade: 4.2
+    CourseAttemptUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [status, version]
+      properties:
+        periodId: { type: string, format: uuid }
+        journeyCode: { type: string }
+        status: { $ref: "#/components/schemas/AttemptStatus" }
+        finalGrade:
+          anyOf: [{ $ref: "#/components/schemas/Grade" }, { type: "null" }]
+        version: { $ref: "#/components/schemas/Version" }
+
+    # --- Simulations ---------------------------------------------------------
+    Simulation:
+      type: object
+      required:
+        [
+          id,
+          name,
+          periodId,
+          periodName,
+          programIds,
+          status,
+          createdAt,
+          updatedAt,
+          version,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        periodId: { type: string, format: uuid }
+        periodName: { type: string }
+        programIds:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/SimulationStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        version: { $ref: "#/components/schemas/Version" }
+    SimulationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Simulation"
+        - type: object
+          required: [selections, creditSummary, weeklySchedule, validation]
+          properties:
+            selections:
+              type: array
+              items: { $ref: "#/components/schemas/SimulationSelection" }
+            creditSummary:
+              type: array
+              description: Resumen de créditos por programa.
+              items: { $ref: "#/components/schemas/ProgramCreditSummary" }
+            totalWeeklyHours: { type: number, format: double, minimum: 0 }
+            weeklySchedule:
+              type: array
+              description: Sesiones para render del calendario semanal.
+              items: { $ref: "#/components/schemas/WeeklyScheduleEntry" }
+            validation: { $ref: "#/components/schemas/SimulationValidation" }
+    SimulationCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, periodId, programIds]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        periodId: { type: string, format: uuid }
+        programIds:
+          type: array
+          minItems: 1
+          maxItems: 2
+          uniqueItems: true
+          items: { type: string, format: uuid }
+    SimulationUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        version: { $ref: "#/components/schemas/Version" }
+    SimulationSelection:
+      type: object
+      required:
+        [
+          id,
+          offeringId,
+          scheduleOptionId,
+          courseId,
+          courseName,
+          programId,
+          credits,
+          journeyCode,
+          offeringStatus,
+          sessions,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        offeringId: { type: string, format: uuid }
+        scheduleOptionId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseName: { type: string }
+        programId: { type: string, format: uuid }
+        credits: { type: number, format: double, minimum: 0 }
+        journeyCode: { type: string }
+        offeringStatus: { $ref: "#/components/schemas/OfferingStatus" }
+        selectedOfferingVersion:
+          allOf: [{ $ref: "#/components/schemas/Version" }]
+          description: Snapshot de la versión de oferta al seleccionar (detecta desactualización).
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/ScheduleSession" }
+        warnings:
+          type: array
+          description: Advertencias no bloqueantes asociadas.
+          items: { $ref: "#/components/schemas/ValidationNotice" }
+    SimulationSelectionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [scheduleOptionId]
+      properties:
+        scheduleOptionId: { type: string, format: uuid }
+        acknowledgeWarnings:
+          type: boolean
+          default: false
+          description: Confirma agregar pese a advertencias no bloqueantes.
+    ProgramCreditSummary:
+      type: object
+      required:
+        [programId, programName, selectedCredits, creditLimit, withinLimit]
+      properties:
+        programId: { type: string, format: uuid }
+        programName: { type: string }
+        selectedCredits: { type: number, format: double, minimum: 0 }
+        creditLimit:
+          {
+            type: integer,
+            minimum: 0,
+            description: Límite configurado para programa y periodo.,
+          }
+        withinLimit: { type: boolean }
+    WeeklyScheduleEntry:
+      type: object
+      required: [day, startsAt, endsAt, courseName, programId]
+      properties:
+        day: { $ref: "#/components/schemas/Weekday" }
+        startsAt: { $ref: "#/components/schemas/LocalTime" }
+        endsAt: { $ref: "#/components/schemas/LocalTime" }
+        courseName: { type: string }
+        programId: { type: string, format: uuid }
+        selectionId: { type: string, format: uuid }
+        inClash:
+          {
+            type: boolean,
+            default: false,
+            description: Marca de choque para resaltar el bloque.,
+          }
+    SimulationValidation:
+      type: object
+      required: [blocking, warnings]
+      properties:
+        blocking:
+          type: array
+          description: Validaciones bloqueantes activas.
+          items: { $ref: "#/components/schemas/ValidationNotice" }
+        warnings:
+          type: array
+          description: Advertencias no bloqueantes.
+          items: { $ref: "#/components/schemas/ValidationNotice" }
+    ValidationNotice:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Código estable de la validación o advertencia que el cliente mapea a su mensaje.
+          examples: [SCHEDULE_CLASH, PRELIMINARY_OFFERING]
+        message:
+          {
+            type: string,
+            description: Mensaje orientador para el usuario.,
+          }
+        metadata:
+          type: object
+          additionalProperties: true
+
+    # --- Catalog -------------------------------------------------------------
+    Program:
+      type: object
+      required: [id, name, faculty, status, availableJourneys, version]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        faculty: { type: string }
+        description: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/ProgramStatus" }
+        availableJourneys:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/JourneyRef" }
+        version: { $ref: "#/components/schemas/Version" }
+    ProgramCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, faculty, availableJourneyCodes]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        faculty: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: string, maxLength: 2000 }
+        availableJourneyCodes:
+          type: array
+          minItems: 1
+          items: { type: string }
+    ProgramUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        faculty: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: [string, "null"], maxLength: 2000 }
+        status: { $ref: "#/components/schemas/ProgramStatus" }
+        availableJourneyCodes:
+          type: array
+          minItems: 1
+          items: { type: string }
+        version: { $ref: "#/components/schemas/Version" }
+
+    Journey:
+      type: object
+      required: [id, code, name, active]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, examples: [DIURNA, NOCTURNA] }
+        name: { type: string }
+        active: { type: boolean }
+    JourneyRef:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+    JourneyCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code:
+          {
+            type: string,
+            minLength: 2,
+            maxLength: 40,
+            pattern: "^[A-Z][A-Z0-9_]*$",
+          }
+        name: { type: string, minLength: 1, maxLength: 80 }
+
+    StudyPlan:
+      type: object
+      required:
+        [id, programId, name, status, totalCredits, applicableJourneys, version]
+      properties:
+        id: { type: string, format: uuid }
+        programId: { type: string, format: uuid }
+        name: { type: string }
+        status: { $ref: "#/components/schemas/PlanStatus" }
+        totalCredits: { type: integer, minimum: 0 }
+        applicableJourneys:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/JourneyRef" }
+        referenceYear: { type: [integer, "null"] }
+        version: { $ref: "#/components/schemas/Version" }
+    StudyPlanCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, totalCredits, applicableJourneyCodes]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        totalCredits: { type: integer, minimum: 0 }
+        applicableJourneyCodes:
+          type: array
+          minItems: 1
+          items: { type: string }
+        referenceYear: { type: integer }
+    StudyPlanUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        totalCredits: { type: integer, minimum: 0 }
+        applicableJourneyCodes:
+          type: array
+          minItems: 1
+          items: { type: string }
+        referenceYear: { type: [integer, "null"] }
+        version: { $ref: "#/components/schemas/Version" }
+
+    # --- Curriculum ----------------------------------------------------------
+    Course:
+      type: object
+      required:
+        [
+          id,
+          planId,
+          programId,
+          name,
+          type,
+          credits,
+          curricularWeeklyHours,
+          status,
+          version,
+        ]
+      properties:
+        id:
+          {
+            type: string,
+            format: uuid,
+            description: Identificador interno único.,
+          }
+        planId: { type: string, format: uuid }
+        programId: { type: string, format: uuid }
+        officialCode:
+          {
+            type: [string, "null"],
+            description: Código oficial opcional.,
+          }
+        name: { type: string }
+        type: { $ref: "#/components/schemas/CourseType" }
+        credits:
+          {
+            type: number,
+            format: double,
+            minimum: 0,
+            description: No negativos.,
+          }
+        curricularWeeklyHours:
+          {
+            type: number,
+            format: double,
+            minimum: 0,
+            description: Intensidad horaria curricular.,
+          }
+        enableable:
+          {
+            type: [boolean, "null"],
+            description: Indicación opcional de si es habilitable.,
+          }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        recommendedSemesters:
+          type: array
+          description: Semestre recomendado por jornada (puede variar, RN).
+          items: { $ref: "#/components/schemas/RecommendedSemester" }
+        version: { $ref: "#/components/schemas/Version" }
+    RecommendedSemester:
+      type: object
+      required: [journeyCode, semester]
+      properties:
+        journeyCode: { type: string }
+        semester: { type: integer, minimum: 1 }
+    CourseCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, credits, curricularWeeklyHours]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        officialCode: { type: string, maxLength: 40 }
+        type: { $ref: "#/components/schemas/CourseType" }
+        credits: { type: number, format: double, minimum: 0 }
+        curricularWeeklyHours: { type: number, format: double, minimum: 0 }
+        enableable: { type: boolean }
+        recommendedSemesters:
+          type: array
+          items: { $ref: "#/components/schemas/RecommendedSemester" }
+    CourseUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        officialCode: { type: [string, "null"], maxLength: 40 }
+        type: { $ref: "#/components/schemas/CourseType" }
+        credits: { type: number, format: double, minimum: 0 }
+        curricularWeeklyHours: { type: number, format: double, minimum: 0 }
+        enableable: { type: [boolean, "null"] }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        recommendedSemesters:
+          type: array
+          items: { $ref: "#/components/schemas/RecommendedSemester" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    CourseRequirement:
+      type: object
+      required: [id, targetCourseId, type, status, version]
+      properties:
+        id: { type: string, format: uuid }
+        targetCourseId: { type: string, format: uuid }
+        type: { $ref: "#/components/schemas/RequirementType" }
+        requiredCourseId:
+          type: [string, "null"]
+          format: uuid
+          description: Materia requerida para COURSE_PASSED/SEQUENCE.
+        requiredCredits:
+          type: [integer, "null"]
+          minimum: 0
+          description: Créditos mínimos para MINIMUM_CREDITS.
+        simultaneityAllowed:
+          type: [boolean, "null"]
+          description: Permite simultaneidad en secuencias.
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+    CourseRequirementCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type: { $ref: "#/components/schemas/RequirementType" }
+        requiredCourseId: { type: string, format: uuid }
+        requiredCredits: { type: integer, minimum: 0 }
+        simultaneityAllowed: { type: boolean }
+    CourseRequirementUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        type: { $ref: "#/components/schemas/RequirementType" }
+        requiredCourseId: { type: [string, "null"], format: uuid }
+        requiredCredits: { type: [integer, "null"], minimum: 0 }
+        simultaneityAllowed: { type: [boolean, "null"] }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    SequentialTrack:
+      type: object
+      required: [id, planId, kind, label, levels, version]
+      properties:
+        id: { type: string, format: uuid }
+        planId: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/SequentialTrackKind" }
+        label: { type: string, examples: ["Electiva", "Profundización"] }
+        consecutiveSimultaneityAllowed:
+          type: boolean
+          description: Si dos niveles consecutivos pueden simularse a la vez (por plan).
+        levels:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/SequentialTrackLevel" }
+        version: { $ref: "#/components/schemas/Version" }
+    SequentialTrackLevel:
+      type: object
+      required: [level]
+      properties:
+        level:
+          {
+            type: integer,
+            minimum: 1,
+            description: "Nivel (p. ej. Electiva I = 1).",
+          }
+        optionCourseIds:
+          type: array
+          description: Materias reales seleccionables en este nivel.
+          items: { type: string, format: uuid }
+    SequentialTrackCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, label, levels]
+      properties:
+        kind: { $ref: "#/components/schemas/SequentialTrackKind" }
+        label: { type: string, minLength: 1, maxLength: 80 }
+        consecutiveSimultaneityAllowed: { type: boolean, default: false }
+        levels:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: "#/components/schemas/SequentialTrackLevel" }
+    SequentialTrackUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 80 }
+        consecutiveSimultaneityAllowed: { type: boolean }
+        levels:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: "#/components/schemas/SequentialTrackLevel" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    DegreeWorkModality:
+      type: object
+      required: [id, planId, name, status, version]
+      properties:
+        id: { type: string, format: uuid }
+        planId: { type: string, format: uuid }
+        name:
+          {
+            type: string,
+            description: Nombre visible de la modalidad.,
+          }
+        credits: { type: [number, "null"], format: double, minimum: 0 }
+        curricularWeeklyHours:
+          { type: [number, "null"], format: double, minimum: 0 }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+    DegreeWorkModalityCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        credits: { type: number, format: double, minimum: 0 }
+        curricularWeeklyHours: { type: number, format: double, minimum: 0 }
+    DegreeWorkModalityUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        credits: { type: [number, "null"], format: double, minimum: 0 }
+        curricularWeeklyHours:
+          { type: [number, "null"], format: double, minimum: 0 }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    # --- Offerings -----------------------------------------------------------
+    AcademicPeriod:
+      type: object
+      required: [id, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, examples: ["2026-2"] }
+        startDate: { type: [string, "null"], format: date }
+        endDate: { type: [string, "null"], format: date }
+        status: { $ref: "#/components/schemas/PeriodStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+    AcademicPeriodCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          { type: string, pattern: "^[0-9]{4}-[0-9]$", examples: ["2026-2"] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        status: { $ref: "#/components/schemas/PeriodStatus" }
+    AcademicPeriodUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        startDate: { type: [string, "null"], format: date }
+        endDate: { type: [string, "null"], format: date }
+        status: { $ref: "#/components/schemas/PeriodStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    Offering:
+      type: object
+      required: [id, courseId, courseName, programId, periodId, status, version]
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseName: { type: string }
+        programId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/OfferingStatus" }
+        notes: { type: [string, "null"] }
+        version: { $ref: "#/components/schemas/Version" }
+    OfferingDetail:
+      allOf:
+        - $ref: "#/components/schemas/Offering"
+        - type: object
+          required: [scheduleOptions]
+          properties:
+            scheduleOptions:
+              type: array
+              items: { $ref: "#/components/schemas/ScheduleOption" }
+    OfferingCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [courseId, periodId]
+      properties:
+        courseId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        notes: { type: string, maxLength: 500 }
+        scheduleOptions:
+          type: array
+          description: Opciones iniciales opcionales; pueden agregarse luego.
+          items: { $ref: "#/components/schemas/ScheduleOptionCreateRequest" }
+    OfferingUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        notes: { type: [string, "null"], maxLength: 500 }
+        version: { $ref: "#/components/schemas/Version" }
+
+    ScheduleOption:
+      type: object
+      required:
+        [id, offeringId, label, journeyCode, weeklyHours, sessions, version]
+      properties:
+        id: { type: string, format: uuid }
+        offeringId: { type: string, format: uuid }
+        label: { type: string, examples: ["A", "B", "01"] }
+        journeyCode: { type: string }
+        weeklyHours:
+          {
+            type: number,
+            format: double,
+            minimum: 0,
+            description: Suma semanal calculada.,
+          }
+        sessions:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ScheduleSession" }
+        version: { $ref: "#/components/schemas/Version" }
+    ScheduleSession:
+      type: object
+      required: [day, startsAt, endsAt]
+      properties:
+        id: { type: string, format: uuid }
+        day: { $ref: "#/components/schemas/Weekday" }
+        startsAt: { $ref: "#/components/schemas/LocalTime" }
+        endsAt:
+          allOf: [{ $ref: "#/components/schemas/LocalTime" }]
+          description: Debe ser posterior a startsAt.
+    ScheduleOptionCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [label, journeyCode, sessions]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 20 }
+        journeyCode: { type: string }
+        sessions:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, startsAt, endsAt]
+            properties:
+              day: { $ref: "#/components/schemas/Weekday" }
+              startsAt: { $ref: "#/components/schemas/LocalTime" }
+              endsAt: { $ref: "#/components/schemas/LocalTime" }
+    ScheduleOptionUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [version]
+      properties:
+        label: { type: string, minLength: 1, maxLength: 20 }
+        journeyCode: { type: string }
+        sessions:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required: [day, startsAt, endsAt]
+            properties:
+              day: { $ref: "#/components/schemas/Weekday" }
+              startsAt: { $ref: "#/components/schemas/LocalTime" }
+              endsAt: { $ref: "#/components/schemas/LocalTime" }
+        version: { $ref: "#/components/schemas/Version" }
+
+    # --- Imports -------------------------------------------------------------
+    ImportSummary:
+      type: object
+      required:
+        [
+          id,
+          kind,
+          programId,
+          status,
+          totalRows,
+          validRows,
+          errors,
+          warnings,
+          createdAt,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/ImportKind" }
+        programId: { type: string, format: uuid }
+        planId: { type: [string, "null"], format: uuid }
+        periodId: { type: [string, "null"], format: uuid }
+        status: { $ref: "#/components/schemas/ImportStatus" }
+        totalRows: { type: integer, minimum: 0 }
+        validRows: { type: integer, minimum: 0 }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/ImportIssue" }
+        warnings:
+          type: array
+          items: { $ref: "#/components/schemas/ImportIssue" }
+        createdAt: { type: string, format: date-time }
+        version: { $ref: "#/components/schemas/Version" }
+    ImportIssue:
+      type: object
+      required: [row, code, message]
+      properties:
+        row:
+          {
+            type: integer,
+            minimum: 0,
+            description: Fila del archivo (0 = global).,
+          }
+        column: { type: [string, "null"] }
+        code:
+          type: string
+          description: Código de error/advertencia (p. ej. COURSE_NAME_MISSING, INVALID_CREDITS, CIRCULAR_SEQUENCE).
+        message: { type: string }
+
+    # --- Administration ------------------------------------------------------
+    Staff:
+      type: object
+      required: [id, fullName, email, status, version]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        assignments:
+          type: array
+          items: { $ref: "#/components/schemas/StaffAssignment" }
+        version: { $ref: "#/components/schemas/Version" }
+    StaffCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [fullName, email]
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 160 }
+        email: { type: string, format: email, maxLength: 254 }
+        programIds:
+          type: array
+          description: Asignaciones iniciales opcionales.
+          items: { type: string, format: uuid }
+    StaffUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [status, version]
+      properties:
+        fullName: { type: string, minLength: 1, maxLength: 160 }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        version: { $ref: "#/components/schemas/Version" }
+    StaffAssignment:
+      type: object
+      required: [id, programId, programName, active, assignedAt]
+      properties:
+        id: { type: string, format: uuid }
+        programId: { type: string, format: uuid }
+        programName: { type: string }
+        active: { type: boolean }
+        assignedAt: { type: string, format: date-time }
+
+    CreditLimit:
+      type: object
+      required: [programId, periodId, maxCredits, version]
+      properties:
+        programId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        maxCredits:
+          {
+            type: integer,
+            minimum: 1,
+            description: "Límite por programa y periodo (default 23).",
+          }
+        version: { $ref: "#/components/schemas/Version" }
+    CreditLimitUpsertRequest:
+      type: object
+      additionalProperties: false
+      required: [programId, periodId, maxCredits]
+      properties:
+        programId: { type: string, format: uuid }
+        periodId: { type: string, format: uuid }
+        maxCredits: { type: integer, minimum: 1, maximum: 60 }
+        version:
+          allOf: [{ $ref: "#/components/schemas/Version" }]
+          description: Requerido al actualizar un límite existente (omitir al crear).
+
+    AllowedEmailDomain:
+      type: object
+      required: [id, domain]
+      properties:
+        id: { type: string, format: uuid }
+        domain:
+          { type: string, format: hostname, examples: [uniquindio.edu.co] }
+
+    # --- Audit ---------------------------------------------------------------
+    AuditEvent:
+      type: object
+      required: [id, actorId, actorRole, action, entityType, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        actorId: { type: string, format: uuid }
+        actorRole: { $ref: "#/components/schemas/UserRole" }
+        action:
+          {
+            type: string,
+            examples: [OFFERING_PUBLISHED, COURSE_ATTEMPT_UPDATED],
+          }
+        entityType: { type: string, examples: [Offering, CourseAttempt] }
+        entityId: { type: [string, "null"], format: uuid }
+        programId: { type: [string, "null"], format: uuid }
+        occurredAt: { type: string, format: date-time }
+        previousValue:
+          type: [object, "null"]
+          additionalProperties: true
+          description: Valores sanitizados antes del cambio (sin secretos).
+        newValue:
+          type: [object, "null"]
+          additionalProperties: true
+
+    # --- Pages ---------------------------------------------------------------
+    SimulationPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              {
+                type: array,
+                items: { $ref: "#/components/schemas/Simulation" },
+              }
+    CourseAttemptPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              {
+                type: array,
+                items: { $ref: "#/components/schemas/CourseAttempt" },
+              }
+    ProgramPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              { type: array, items: { $ref: "#/components/schemas/Program" } }
+    CoursePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              { type: array, items: { $ref: "#/components/schemas/Course" } }
+    OfferingPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              { type: array, items: { $ref: "#/components/schemas/Offering" } }
+    ImportPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              {
+                type: array,
+                items: { $ref: "#/components/schemas/ImportSummary" },
+              }
+    StaffPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              { type: array, items: { $ref: "#/components/schemas/Staff" } }
+    AuditEventPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMeta"
+        - type: object
+          required: [content]
+          properties:
+            content:
+              {
+                type: array,
+                items: { $ref: "#/components/schemas/AuditEvent" },
+              }

@@ -1,0 +1,236 @@
+/* Brújula — Canonical design tokens
+ * Source of truth: DESIGN.md §7.1
+ * Tailwind v4: @theme inline exposes CSS custom properties as Tailwind utilities.
+ * No tailwind.config.js — v4 is CSS-first.
+ */
+
+@import "tailwindcss";
+@import "@fontsource/archivo/400.css";
+@import "@fontsource/archivo/500.css";
+@import "@fontsource/archivo/600.css";
+@import "@fontsource/archivo/700.css";
+@import "@fontsource/hanken-grotesk/400.css";
+@import "@fontsource/hanken-grotesk/500.css";
+@import "@fontsource/hanken-grotesk/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+/* Dark mode via .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  /* ------------------------------------------------------------------ */
+  /* Typography                                                           */
+  /* ------------------------------------------------------------------ */
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ------------------------------------------------------------------ */
+  /* Color tokens (mapped to CSS vars below)                             */
+  /* ------------------------------------------------------------------ */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Academic state tokens */
+  --color-state-aprobada: var(--state-aprobada);
+  --color-state-aprobada-foreground: var(--state-aprobada-foreground);
+  --color-state-en-curso: var(--state-en-curso);
+  --color-state-en-curso-foreground: var(--state-en-curso-foreground);
+  --color-state-cancelada: var(--state-cancelada);
+  --color-state-cancelada-foreground: var(--state-cancelada-foreground);
+  --color-state-reprobada: var(--state-reprobada);
+  --color-state-reprobada-foreground: var(--state-reprobada-foreground);
+  --color-state-pendiente: var(--state-pendiente);
+  --color-state-pendiente-foreground: var(--state-pendiente-foreground);
+  --color-state-habilitada: var(--state-habilitada);
+  --color-state-habilitada-foreground: var(--state-habilitada-foreground);
+  --color-state-bloqueada: var(--state-bloqueada);
+  --color-state-bloqueada-foreground: var(--state-bloqueada-foreground);
+
+  /* Border radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ------------------------------------------------------------------ */
+/* Light theme (default)                                               */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Base */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.145 0 0);
+
+  /* Card */
+  --card: oklch(0.99 0 0);
+  --card-foreground: oklch(0.145 0 0);
+
+  /* Popover */
+  --popover: oklch(0.99 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  /* Primary — deep institutional blue */
+  --primary: oklch(0.35 0.18 264);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* Secondary */
+  --secondary: oklch(0.96 0.005 264);
+  --secondary-foreground: oklch(0.25 0.05 264);
+
+  /* Muted */
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+
+  /* Accent */
+  --accent: oklch(0.96 0.005 264);
+  --accent-foreground: oklch(0.25 0.05 264);
+
+  /* Destructive */
+  --destructive: oklch(0.55 0.22 29);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Success */
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.98 0 0);
+
+  /* Warning */
+  --warning: oklch(0.72 0.18 85);
+  --warning-foreground: oklch(0.15 0 0);
+
+  /* Info */
+  --info: oklch(0.55 0.18 230);
+  --info-foreground: oklch(0.98 0 0);
+
+  /* Border / Input / Ring */
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.35 0.18 264);
+
+  /* Border radius base */
+  --radius: 0.5rem;
+
+  /* Academic state colors */
+  --state-aprobada: oklch(0.55 0.18 145);
+  --state-aprobada-foreground: oklch(0.98 0 0);
+
+  --state-en-curso: oklch(0.55 0.18 230);
+  --state-en-curso-foreground: oklch(0.98 0 0);
+
+  --state-cancelada: oklch(0.6 0.05 0);
+  --state-cancelada-foreground: oklch(0.98 0 0);
+
+  --state-reprobada: oklch(0.55 0.22 29);
+  --state-reprobada-foreground: oklch(0.98 0 0);
+
+  --state-pendiente: oklch(0.72 0.18 85);
+  --state-pendiente-foreground: oklch(0.15 0 0);
+
+  --state-habilitada: oklch(0.65 0.18 300);
+  --state-habilitada-foreground: oklch(0.98 0 0);
+
+  --state-bloqueada: oklch(0.5 0.02 0);
+  --state-bloqueada-foreground: oklch(0.85 0 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Dark theme                                                          */
+/* ------------------------------------------------------------------ */
+.dark {
+  --background: oklch(0.13 0.01 264);
+  --foreground: oklch(0.97 0 0);
+
+  --card: oklch(0.17 0.01 264);
+  --card-foreground: oklch(0.97 0 0);
+
+  --popover: oklch(0.17 0.01 264);
+  --popover-foreground: oklch(0.97 0 0);
+
+  --primary: oklch(0.65 0.18 264);
+  --primary-foreground: oklch(0.1 0 0);
+
+  --secondary: oklch(0.22 0.02 264);
+  --secondary-foreground: oklch(0.85 0 0);
+
+  --muted: oklch(0.22 0.01 264);
+  --muted-foreground: oklch(0.65 0 0);
+
+  --accent: oklch(0.22 0.02 264);
+  --accent-foreground: oklch(0.85 0 0);
+
+  --destructive: oklch(0.6 0.22 29);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.6 0.18 145);
+  --success-foreground: oklch(0.1 0 0);
+
+  --warning: oklch(0.75 0.18 85);
+  --warning-foreground: oklch(0.1 0 0);
+
+  --info: oklch(0.6 0.18 230);
+  --info-foreground: oklch(0.1 0 0);
+
+  --border: oklch(0.28 0.02 264);
+  --input: oklch(0.28 0.02 264);
+  --ring: oklch(0.65 0.18 264);
+
+  --state-aprobada: oklch(0.6 0.18 145);
+  --state-aprobada-foreground: oklch(0.1 0 0);
+
+  --state-en-curso: oklch(0.6 0.18 230);
+  --state-en-curso-foreground: oklch(0.1 0 0);
+
+  --state-cancelada: oklch(0.55 0.05 0);
+  --state-cancelada-foreground: oklch(0.98 0 0);
+
+  --state-reprobada: oklch(0.6 0.22 29);
+  --state-reprobada-foreground: oklch(0.98 0 0);
+
+  --state-pendiente: oklch(0.75 0.18 85);
+  --state-pendiente-foreground: oklch(0.1 0 0);
+
+  --state-habilitada: oklch(0.7 0.18 300);
+  --state-habilitada-foreground: oklch(0.1 0 0);
+
+  --state-bloqueada: oklch(0.4 0.02 264);
+  --state-bloqueada-foreground: oklch(0.75 0 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base styles                                                         */
+/* ------------------------------------------------------------------ */
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
