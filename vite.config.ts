@@ -20,6 +20,20 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // OIDC authorization redirect — Spring Security handles /oauth2/authorization/**
+      // (W-WUD-001 fix: previously unproxied, causing Vite SPA fallback in dev mode)
+      "/oauth2": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      // OIDC authorization code callback — Keycloak redirects back to this path
+      // after successful authentication (W-WUD-001 fix)
+      "/login/oauth2": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

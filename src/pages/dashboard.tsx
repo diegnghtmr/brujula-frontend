@@ -1,22 +1,22 @@
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { UserProfileCard } from "@/features/auth/components/user-profile-card";
 
 /**
- * Dashboard — placeholder shell page.
- * Real feature content begins in Fase 1.
+ * Dashboard — authenticated home page.
+ * Wrapped by AuthenticatedShell (provides disclaimer banner + header).
  */
 function DashboardPage() {
   return (
-    <main className="min-h-screen bg-background p-8">
-      <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-foreground font-display">
-          Brújula — Planificador Curricular
-        </h1>
-        <ThemeToggle />
-      </header>
+    <div className="p-8">
+      <h1 className="text-2xl font-semibold text-foreground font-display mb-8">
+        Inicio
+      </h1>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* User profile from /me */}
+        <UserProfileCard />
+
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Estado del progreso</CardTitle>
@@ -34,21 +34,16 @@ function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Scaffold Fase 0</CardTitle>
+            <CardTitle className="text-base">Fase 1 — Seguridad</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Base de la aplicación lista. La lógica de negocio comienza en Fase 1.
-            </p>
-            {/* DESIGN §6.13 mandatory disclaimer */}
-            <p className="text-xs text-muted-foreground mt-4 border-t pt-3">
-              La información académica registrada en esta plataforma es autodeclarada y no
-              reemplaza ni certifica la información oficial de la Universidad del Quindío.
+              Autenticación OIDC activa. La lógica académica comienza en Fase 2.
             </p>
           </CardContent>
         </Card>
       </section>
-    </main>
+    </div>
   );
 }
 
