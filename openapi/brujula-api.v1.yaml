@@ -3213,6 +3213,13 @@ components:
         simultaneityAllowed:
           type: [boolean, "null"]
           description: Permite simultaneidad en secuencias.
+        confidence:
+          type: [string, "null"]
+          enum: [HIGH, MEDIUM, LOW, null]
+          description: Confianza de la arista inferida (sugerido vs bloqueante; interpretado por el simulador).
+        inferred:
+          type: [boolean, "null"]
+          description: Marca aristas no oficiales/inferidas.
         status: { $ref: "#/components/schemas/CourseStatus" }
         version: { $ref: "#/components/schemas/Version" }
     CourseRequirementCreateRequest:
