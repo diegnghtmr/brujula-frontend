@@ -7,6 +7,7 @@
  * - The backend origin (same-origin via Vite proxy) handles /oauth2/authorization/keycloak.
  */
 
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,32 @@ function LoginPage() {
             Iniciar sesión
           </Button>
         </section>
+
+        <nav
+          className="flex flex-col items-center gap-2 text-sm"
+          aria-label="Accesos rápidos"
+        >
+          <Link
+            to="/register"
+            className={cn(
+              "text-primary underline-offset-4 hover:underline",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "min-h-[44px] inline-flex items-center"
+            )}
+          >
+            Registrarse
+          </Link>
+          <Link
+            to="/forgot-password"
+            className={cn(
+              "text-muted-foreground underline-offset-4 hover:underline hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "min-h-[44px] inline-flex items-center"
+            )}
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </nav>
 
         <footer>
           <p className="text-xs text-muted-foreground text-center">

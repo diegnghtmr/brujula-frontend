@@ -37,7 +37,7 @@ function RequireAuth({ children, redirectTo = "/login" }: RequireAuthProps) {
         <span className="sr-only">Verificando sesión...</span>
         <div
           className={cn(
-            "w-8 h-8 border-4 rounded-full animate-spin",
+            "w-8 h-8 border-4 rounded-full motion-safe:animate-spin",
             "border-muted border-t-primary"
           )}
           aria-hidden="true"

@@ -60,6 +60,20 @@ describe("LoginPage (S1-G-1)", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     expect(screen.getByText(/brújula/i)).toBeInTheDocument();
   });
+
+  it("has a link to /register for new users", () => {
+    render(<LoginPage />, { wrapper: createWrapper() });
+    const registerLink = screen.getByRole("link", { name: /registrarse/i });
+    expect(registerLink).toBeInTheDocument();
+    expect(registerLink).toHaveAttribute("href", "/register");
+  });
+
+  it("has a link to /forgot-password for password recovery", () => {
+    render(<LoginPage />, { wrapper: createWrapper() });
+    const forgotLink = screen.getByRole("link", { name: /olvidaste tu contraseña/i });
+    expect(forgotLink).toBeInTheDocument();
+    expect(forgotLink).toHaveAttribute("href", "/forgot-password");
+  });
 });
 
 describe("LogoutButton (S1-G-1)", () => {

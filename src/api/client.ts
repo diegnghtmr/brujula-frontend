@@ -8,7 +8,10 @@
  * All API calls go through generated *Api classes instantiated here.
  */
 
-import axios, { type AxiosInstance } from "axios";
+import axios, { type AxiosInstance, type AxiosError } from "axios";
+
+// Re-export AxiosError type so consumers don't need to import axios directly
+export type { AxiosError };
 
 function getCookie(name: string): string | undefined {
   const match = document.cookie

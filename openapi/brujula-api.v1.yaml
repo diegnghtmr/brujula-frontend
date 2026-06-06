@@ -73,6 +73,11 @@ paths:
         correos cuyo dominio esté habilitado. La credencial se delega al
         proveedor de identidad (Keycloak); el backend **no** almacena contraseñas.
         Conserva evidencia de aceptación de términos y tratamiento de datos.
+
+        **CSRF**: aunque el endpoint es público (`security: []`), la protección CSRF está activa
+        globalmente (modo SPA). El cliente SPA debe leer la cookie `XSRF-TOKEN` e incluirla
+        en la cabecera `X-XSRF-TOKEN` en cada solicitud de escritura (POST/PUT/DELETE/PATCH).
+        Una solicitud sin esta cabecera recibirá 403.
       operationId: registerStudent
       security: []
       parameters:
@@ -100,36 +105,25 @@ paths:
               schema: { $ref: "#/components/schemas/ProblemDetail" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
-  /auth/email-verifications/confirm:
-    post:
-      tags: [Auth]
-      summary: Confirmar verificación de correo
-      description: Activa la cuenta a partir del token enviado por correo. Hasta verificar, el estudiante no puede configurar programas ni registrar historial.
-      operationId: confirmEmailVerification
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [token]
-              properties:
-                token: { type: string, minLength: 16, maxLength: 512 }
-      responses:
-        "204": { description: Correo verificado; la cuenta queda activa. }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "410":
-          description: Token expirado o ya utilizado.
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/ProblemDetail" }
+  # NOTE (S2-A-3 contract audit): /auth/email-verifications/confirm (token-confirm) has been
+  # REMOVED. Architecture decision: Keycloak handles email verification natively on its own page.
+  # The backend does NOT receive a verification token to confirm. Keycloak verifies the user and
+  # sets emailVerified=true; the backend syncs onboardingState PENDING_VERIFICATION→ACTIVE on the
+  # next OIDC login (claim email_verified=true). /auth/email-verifications is a RESEND trigger only.
+  # Decision recorded: #1574 (Keycloak 26.4 verified API facts).
 
   /auth/email-verifications/resend:
     post:
       tags: [Auth]
       summary: Reenviar correo de verificación
+      description: |
+        Solicita el reenvío del correo de verificación de cuenta. Responde siempre 202 para
+        no revelar existencia de cuentas.
+
+        **CSRF**: aunque el endpoint es público (`security: []`), la protección CSRF está activa
+        globalmente (modo SPA). El cliente SPA debe leer la cookie `XSRF-TOKEN` e incluirla
+        en la cabecera `X-XSRF-TOKEN` en cada solicitud de escritura (POST/PUT/DELETE/PATCH).
+        Una solicitud sin esta cabecera recibirá 403.
       operationId: resendEmailVerification
       security: []
       parameters:
@@ -155,7 +149,14 @@ paths:
     post:
       tags: [Auth]
       summary: Solicitar recuperación de contraseña
-      description: Inicia recuperación mediante enlace temporal a correo verificado. Responde siempre 202 para no revelar existencia de cuentas.
+      description: |
+        Inicia recuperación mediante enlace temporal a correo verificado. Responde siempre
+        202 para no revelar existencia de cuentas.
+
+        **CSRF**: aunque el endpoint es público (`security: []`), la protección CSRF está activa
+        globalmente (modo SPA). El cliente SPA debe leer la cookie `XSRF-TOKEN` e incluirla
+        en la cabecera `X-XSRF-TOKEN` en cada solicitud de escritura (POST/PUT/DELETE/PATCH).
+        Una solicitud sin esta cabecera recibirá 403.
       operationId: requestPasswordRecovery
       security: []
       requestBody:
@@ -175,40 +176,12 @@ paths:
           }
         "400": { $ref: "#/components/responses/BadRequest" }
 
-  /auth/password-recovery/confirm:
-    post:
-      tags: [Auth]
-      summary: Confirmar restablecimiento de contraseña
-      operationId: confirmPasswordRecovery
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [token, newPassword]
-              properties:
-                token: { type: string, minLength: 16, maxLength: 512 }
-                newPassword:
-                  {
-                    type: string,
-                    format: password,
-                    minLength: 10,
-                    maxLength: 128,
-                  }
-      responses:
-        "204":
-          {
-            description: Contraseña restablecida (gestionada por el proveedor de identidad).,
-          }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "410":
-          description: Token expirado o ya utilizado.
-          content:
-            application/problem+json:
-              schema: { $ref: "#/components/schemas/ProblemDetail" }
+  # NOTE (S2-A-3 contract audit): /auth/password-recovery/confirm (token+newPassword) has been
+  # REMOVED. Architecture decision: Keycloak handles password reset natively on its own page.
+  # The backend does NOT receive or process reset tokens. Flow: POST /auth/password-recovery
+  # triggers execute-actions-email [UPDATE_PASSWORD] via Keycloak Admin API; Keycloak sends a link;
+  # user clicks link → Keycloak's own reset form → no backend confirm endpoint needed.
+  # Decision: Option A (Keycloak-native reset) per S2-A-3 decision. Recorded: #1574.
 
   /auth/logout:
     post:
@@ -2615,22 +2588,23 @@ components:
       type: object
       additionalProperties: false
       required:
-        [fullName, email, password, acceptedTerms, acceptedDataProcessing]
+        [fullName, email, acceptedTerms, acceptedDataProcessing]
       properties:
         fullName: { type: string, minLength: 1, maxLength: 160 }
         email: { $ref: "#/components/schemas/InstitutionalEmail" }
-        password:
-          { type: string, format: password, minLength: 10, maxLength: 128 }
-        passwordConfirmation:
-          { type: string, format: password, minLength: 10, maxLength: 128 }
+        # OPTION A (DT-011): backend NEVER handles a password. Keycloak sends an
+        # UPDATE_PASSWORD action-email so the user sets their credential on Keycloak's page.
+        # password and passwordConfirmation fields are intentionally absent from this contract.
         acceptedTerms:
           type: boolean
-          const: true
-          description: Aceptación de términos de uso.
+          description: >
+            Aceptación de términos de uso. Must be true;
+            requests with false are rejected (422).
         acceptedDataProcessing:
           type: boolean
-          const: true
-          description: Aceptación de tratamiento de datos personales.
+          description: >
+            Aceptación de tratamiento de datos personales. Must be true;
+            requests with false are rejected (422).
 
     RegistrationAccepted:
       type: object
