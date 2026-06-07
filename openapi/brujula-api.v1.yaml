@@ -1322,6 +1322,31 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /plans/{planId}/malla:
+    parameters:
+      - $ref: "#/components/parameters/PlanId"
+    get:
+      tags: [Curriculum]
+      summary: Malla curricular del plan organizada por semestre
+      description: |
+        Materias ACTIVE del plan agrupadas por semestre recomendado según la jornada de referencia.
+        Ensamblado en memoria (ADR-F2-001); no requiere estado del estudiante.
+      operationId: getPlanMalla
+      parameters:
+        - name: journeyCode
+          in: query
+          required: true
+          description: Código de jornada de referencia (p. ej. DIURNA, NOCTURNA).
+          schema: { type: string }
+      responses:
+        "200":
+          description: Malla curricular del plan.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanMalla" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /staff/plans/{planId}/degree-work-modalities:
     parameters:
       - $ref: "#/components/parameters/PlanId"
@@ -3254,6 +3279,12 @@ components:
         consecutiveSimultaneityAllowed:
           type: boolean
           description: Si dos niveles consecutivos pueden simularse a la vez (por plan).
+        gatekeeperCourseId:
+          type: [string, "null"]
+          format: uuid
+          description: |
+            Materia requisito para ingresar al nivel 1 de esta pista (solo pistas DEEPENING).
+            Nulo para pistas PERSONAL_ELECTIVE y pistas DEEPENING sin requisito definido (V014).
         levels:
           type: array
           minItems: 1
@@ -3335,6 +3366,72 @@ components:
           { type: [number, "null"], format: double, minimum: 0 }
         status: { $ref: "#/components/schemas/CourseStatus" }
         version: { $ref: "#/components/schemas/Version" }
+
+    # --- Malla (plan-level curricular grid) -----------------------------------
+    PlanMalla:
+      type: object
+      required: [planId, journeyCode, semesterBuckets, graduationRequirements]
+      properties:
+        planId: { type: string, format: uuid }
+        journeyCode:
+          type: string
+          description: Código de jornada de referencia usado para agrupar semestres.
+        semesterBuckets:
+          type: array
+          description: Semestres del plan, ordenados de menor a mayor, solo con materias ACTIVE.
+          items:
+            type: object
+            required: [recommendedSemester, courses]
+            properties:
+              recommendedSemester:
+                type: integer
+                minimum: 1
+                description: Número de semestre recomendado (base 1).
+              courses:
+                type: array
+                items: { $ref: "#/components/schemas/MallaCourse" }
+        graduationRequirements:
+          type: [string, "null"]
+          description: |
+            Texto informativo con los requisitos de grado aplicables al plan (CUR-008 §3).
+            Incluye suficiencia en lengua extranjera y Cátedra Multidisciplinar.
+            No es una entidad modelada; es copia estática de carácter orientador.
+    MallaRequirement:
+      type: object
+      description: Arista de requisito compacta incluida en cada materia de la malla (CUR-008 §2).
+      required: [type]
+      properties:
+        type: { $ref: "#/components/schemas/RequirementType" }
+        requiredCourseId:
+          type: [string, "null"]
+          format: uuid
+          description: UUID del curso prerrequisito (nulo para MINIMUM_CREDITS/CONFIGURABLE).
+        confidence:
+          type: [string, "null"]
+          enum: [HIGH, MEDIUM, LOW, null]
+          description: Nivel de confianza de la arista (metadata para el simulador).
+        inferred:
+          type: [boolean, "null"]
+          description: Si la arista fue inferida y no está en el plan oficial.
+        simultaneityAllowed:
+          type: [boolean, "null"]
+          description: Si se permite inscripción simultánea con el prerrequisito.
+    MallaCourse:
+      type: object
+      required: [id, name, type, credits, requirements]
+      properties:
+        id: { type: string, format: uuid }
+        officialCode: { type: [string, "null"] }
+        name: { type: string }
+        type: { $ref: "#/components/schemas/CourseType" }
+        credits:
+          type: number
+          format: double
+          minimum: 0
+        requirements:
+          type: array
+          description: Aristas de requisito de esta materia (CUR-008 §2). Lista vacía si no tiene requisitos.
+          items: { $ref: "#/components/schemas/MallaRequirement" }
 
     # --- Offerings -----------------------------------------------------------
     AcademicPeriod:
