@@ -332,6 +332,11 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/VersionConflict" }
+        "422":
+          description: Cambio de plan requiere acknowledgeHistoryImpact=true cuando existen intentos de cursos previos.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
     delete:
       tags: [Subscriptions]
       summary: Retirar una suscripción de planificación
