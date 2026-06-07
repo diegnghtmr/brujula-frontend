@@ -1,5 +1,5 @@
 /**
- * App router — Fase 1 + Slice 2 routes.
+ * App router — Fase 1 + Fase 2 routes.
  *
  * Route structure:
  * Public:
@@ -10,7 +10,10 @@
  *   /403-forbidden      → ForbiddenPage (inline)
  *
  * Protected (RequireAuth + AuthenticatedShell):
- *   /dashboard          → DashboardPage
+ *   /dashboard                         → DashboardPage
+ *   /catalog/programs                  → ProgramListPage (CAT-001)
+ *   /catalog/plans/:planId             → StudyPlanPage (CAT-002/CAT-003)
+ *   /curriculum/plans/:planId/malla    → MallaView (CUR-008)
  *
  * Admin-gated (RequireRole(ADMIN) inside the component):
  *   /admin/staff           → StaffAdminPage
@@ -33,6 +36,9 @@ import { EmailVerificationPage } from "@/features/registration/components/email-
 import { ForgotPasswordPage } from "@/features/registration/components/forgot-password-page";
 import { StaffAdminPage } from "@/features/administration/components/staff-admin-page";
 import { AllowedDomainsAdminPage } from "@/features/administration/components/allowed-domains-admin-page";
+import { ProgramListPage } from "@/features/catalog/components/program-list-page";
+import { StudyPlanPage } from "@/features/catalog/components/study-plan-page";
+import { MallaView } from "@/features/curriculum/components/malla-view";
 import { cn } from "@/lib/utils";
 
 /** Inline 403 page (no separate file needed — simple notice). */
@@ -80,6 +86,40 @@ function AppRoutes() {
           <RequireAuth>
             <AuthenticatedShell>
               <DashboardPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+
+      {/* Catalog routes — CAT-001/CAT-002/CAT-003 (Fase 2) — authenticated users only */}
+      <Route
+        path="/catalog/programs"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <ProgramListPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/catalog/plans/:planId"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <StudyPlanPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+
+      {/* Curriculum routes — CUR-008 (Fase 2) — authenticated users only */}
+      <Route
+        path="/curriculum/plans/:planId/malla"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <MallaView />
             </AuthenticatedShell>
           </RequireAuth>
         }

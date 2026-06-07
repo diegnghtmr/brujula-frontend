@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "api:generate": "openapi-generator-cli generate -i openapi/brujula-api.v1.yaml -g typescript-axios -o src/api/generated --additional-properties=withSeparateModelsAndApi=true,supportsES6=true,useSingleRequestParameter=true,npmName=brujula-api-client,npmVersion=0.0.1,apiPackage=api,modelPackage=models"
+    "api:generate": "openapi-generator-cli generate -i openapi/brujula-api.v1.yaml -g typescript-axios -o src/api/generated --additional-properties=withSeparateModelsAndApi=true,supportsES6=true,useSingleRequestParameter=true,npmName=brujula-api-client,npmVersion=0.0.1,apiPackage=api,modelPackage=models,legacyDiscriminatorBehavior=false"
   },
   "dependencies": {
     "@fontsource/archivo": "^5.2.5",
