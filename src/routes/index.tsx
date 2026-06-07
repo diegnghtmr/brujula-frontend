@@ -39,6 +39,10 @@ import { AllowedDomainsAdminPage } from "@/features/administration/components/al
 import { ProgramListPage } from "@/features/catalog/components/program-list-page";
 import { StudyPlanPage } from "@/features/catalog/components/study-plan-page";
 import { MallaView } from "@/features/curriculum/components/malla-view";
+import { SubscriptionListPage } from "@/features/progress/components/subscription-list-page";
+import { SubscribeForm } from "@/features/progress/components/subscribe-form";
+import { DeclareProgressForm } from "@/features/progress/components/declare-progress-form";
+import { ProgressSummaryView } from "@/features/progress/components/progress-summary-view";
 import { cn } from "@/lib/utils";
 
 /** Inline 403 page (no separate file needed — simple notice). */
@@ -120,6 +124,48 @@ function AppRoutes() {
           <RequireAuth>
             <AuthenticatedShell>
               <MallaView />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+
+      {/* Progress / Student onboarding routes — Fase 3 (WU5) — STUDENT role, RequireAuth */}
+      <Route
+        path="/progress/subscriptions"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <SubscriptionListPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/progress/subscribe"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <SubscribeForm />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/progress/subscriptions/:subscriptionId/declare"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <DeclareProgressForm />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/progress/subscriptions/:subscriptionId/progress"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <ProgressSummaryView />
             </AuthenticatedShell>
           </RequireAuth>
         }
