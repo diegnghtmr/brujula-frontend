@@ -5,6 +5,7 @@ import { http, HttpResponse } from "msw";
  * These mock the generated API endpoints so tests don't need a running backend.
  * Slice-2 handlers added for: registration, email verification, password recovery,
  * admin allowed-email-domains, admin staff.
+ * Fase-4 (WU6) handlers added for: simulation CRUD, offerings, periods.
  */
 export const handlers = [
   // Health endpoint smoke mock
@@ -99,6 +100,189 @@ export const handlers = [
       email: "alice@uniquindio.edu.co",
       status: "INACTIVE",
       version: 2,
+    });
+  }),
+
+  // ---- Fase-4 WU6: Simulation CRUD + Offerings + Periods ----
+
+  // GET /me/subscriptions — student program subscriptions (global fallback; inline server.use() overrides take precedence)
+  http.get("/api/v1/me/subscriptions", () => {
+    return HttpResponse.json([]);
+  }),
+
+  // GET /periods — academic periods list
+  http.get("/api/v1/periods", () => {
+    return HttpResponse.json([
+      {
+        id: "550e8400-e29b-41d4-a716-aaa000000001",
+        name: "2026-2",
+        status: "ACTIVE",
+        version: 0,
+      },
+    ]);
+  }),
+
+  // GET /offerings — published offerings (periodId required)
+  http.get("/api/v1/offerings", () => {
+    return HttpResponse.json({
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: 20,
+      number: 0,
+    });
+  }),
+
+  // GET /offerings/:offeringId — offering detail with schedule options
+  http.get("/api/v1/offerings/:offeringId", () => {
+    return HttpResponse.json({
+      id: "off-default",
+      courseId: "course-default",
+      courseName: "Curso de Prueba",
+      programId: "prog-default",
+      periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+      status: "PRELIMINARY",
+      version: 1,
+      scheduleOptions: [],
+    });
+  }),
+
+  // GET /me/simulations — list simulations
+  http.get("/api/v1/me/simulations", () => {
+    return HttpResponse.json({
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: 20,
+      number: 0,
+    });
+  }),
+
+  // POST /me/simulations — create simulation
+  http.post("/api/v1/me/simulations", () => {
+    return HttpResponse.json(
+      {
+        id: "sim-default-1",
+        name: "Simulación Default",
+        periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+        periodName: "2026-2",
+        programIds: ["prog-default"],
+        status: "CURRENT",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+        version: 0,
+      },
+      { status: 201 }
+    );
+  }),
+
+  // GET /me/simulations/:simulationId — simulation detail
+  http.get("/api/v1/me/simulations/:simulationId", () => {
+    return HttpResponse.json({
+      id: "sim-default-1",
+      name: "Simulación Default",
+      periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+      periodName: "2026-2",
+      programIds: ["prog-default"],
+      status: "CURRENT",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+      version: 1,
+      selections: [],
+      creditSummary: [],
+      weeklySchedule: [],
+      totalWeeklyHours: 0,
+      validation: { blocking: [], warnings: [] },
+    });
+  }),
+
+  // PATCH /me/simulations/:simulationId — update simulation
+  http.patch("/api/v1/me/simulations/:simulationId", async ({ request }) => {
+    const body = await request.json() as { name?: string; version?: number };
+    return HttpResponse.json({
+      id: "sim-default-1",
+      name: body.name ?? "Simulación Default",
+      periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+      periodName: "2026-2",
+      programIds: ["prog-default"],
+      status: "CURRENT",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+      version: (body.version ?? 0) + 1,
+    });
+  }),
+
+  // DELETE /me/simulations/:simulationId — delete simulation
+  http.delete("/api/v1/me/simulations/:simulationId", () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // POST /me/simulations/:simulationId/duplications — duplicate
+  http.post("/api/v1/me/simulations/:simulationId/duplications", () => {
+    return HttpResponse.json(
+      {
+        id: "sim-dup-1",
+        name: "Copia de Simulación",
+        periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+        periodName: "2026-2",
+        programIds: ["prog-default"],
+        status: "CURRENT",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+        version: 0,
+      },
+      { status: 201 }
+    );
+  }),
+
+  // GET /me/simulations/:simulationId/selections — list selections
+  http.get("/api/v1/me/simulations/:simulationId/selections", () => {
+    return HttpResponse.json([]);
+  }),
+
+  // POST /me/simulations/:simulationId/selections — add selection
+  http.post("/api/v1/me/simulations/:simulationId/selections", () => {
+    return HttpResponse.json(
+      {
+        id: "sel-default-1",
+        offeringId: "off-default",
+        scheduleOptionId: "opt-default",
+        courseId: "course-default",
+        courseName: "Curso de Prueba",
+        programId: "prog-default",
+        credits: 3,
+        journeyCode: "DIURNA",
+        offeringStatus: "PRELIMINARY",
+        selectedOfferingVersion: 1,
+        sessions: [],
+        warnings: [],
+      },
+      { status: 201 }
+    );
+  }),
+
+  // DELETE /me/simulations/:simulationId/selections/:selectionId
+  http.delete("/api/v1/me/simulations/:simulationId/selections/:selectionId", () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // POST /me/simulations/:simulationId/review
+  http.post("/api/v1/me/simulations/:simulationId/review", () => {
+    return HttpResponse.json({
+      id: "sim-default-1",
+      name: "Simulación Default",
+      periodId: "550e8400-e29b-41d4-a716-aaa000000001",
+      periodName: "2026-2",
+      programIds: ["prog-default"],
+      status: "CURRENT",
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+      version: 2,
+      selections: [],
+      creditSummary: [],
+      weeklySchedule: [],
+      totalWeeklyHours: 0,
+      validation: { blocking: [], warnings: [] },
     });
   }),
 ];

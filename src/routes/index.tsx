@@ -43,6 +43,9 @@ import { SubscriptionListPage } from "@/features/progress/components/subscriptio
 import { SubscribeForm } from "@/features/progress/components/subscribe-form";
 import { DeclareProgressForm } from "@/features/progress/components/declare-progress-form";
 import { ProgressSummaryView } from "@/features/progress/components/progress-summary-view";
+import { SimulationListPage } from "@/features/simulation/components/simulation-list-page";
+import { SimulationCreateForm } from "@/features/simulation/components/simulation-create-form";
+import { SimulationDetailPage } from "@/features/simulation/components/simulation-detail-page";
 import { cn } from "@/lib/utils";
 
 /** Inline 403 page (no separate file needed — simple notice). */
@@ -166,6 +169,38 @@ function AppRoutes() {
           <RequireAuth>
             <AuthenticatedShell>
               <ProgressSummaryView />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+
+      {/* Simulation routes — Fase 4 (WU6) — STUDENT role, RequireAuth */}
+      <Route
+        path="/simulations"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <SimulationListPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/simulations/new"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <SimulationCreateForm />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/simulations/:simulationId"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <SimulationDetailPage />
             </AuthenticatedShell>
           </RequireAuth>
         }
