@@ -50,16 +50,27 @@ if [ ! -f "$COMPOSE_FILE" ]; then
   exit 1
 fi
 
+# Detect the available Compose command: the v2 plugin (`docker compose`) is
+# preferred, but fall back to the legacy standalone binary (`docker-compose`).
+if docker compose version >/dev/null 2>&1; then
+  DC=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  DC=(docker-compose)
+else
+  echo "[CI] ERROR: neither 'docker compose' nor 'docker-compose' is available"
+  exit 1
+fi
+
 # Cleanup function: always run compose down on exit (success or failure)
 cleanup() {
   echo ""
-  echo "--- [teardown] docker compose down ---"
-  docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
+  echo "--- [teardown] compose down ---"
+  "${DC[@]}" -f "$COMPOSE_FILE" down --remove-orphans || true
 }
 trap cleanup EXIT
 
-echo "--- [1/3] docker compose up (full stack with health wait) ---"
-docker compose -f "$COMPOSE_FILE" up -d --wait
+echo "--- [1/3] compose up (full stack with health wait) ---"
+"${DC[@]}" -f "$COMPOSE_FILE" up -d --wait
 echo "    Stack is healthy."
 
 echo ""
