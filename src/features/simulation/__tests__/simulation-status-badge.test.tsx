@@ -2,10 +2,13 @@
  * SimulationStatusBadge — WCAG 2.2 AA
  *
  * INV-005: every status conveyed by color + icon + text label (never color alone).
+ *
+ * WU6 (T-WU6.8 / QAL-A11Y-001-S3): vitest-axe zero-violation assertions.
  */
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { axe } from "vitest-axe";
 import { SimulationStatusBadge } from "@/features/simulation/components/simulation-status-badge";
 
 describe("SimulationStatusBadge", () => {
@@ -39,5 +42,23 @@ describe("SimulationStatusBadge", () => {
     const icons2 = badge.querySelectorAll("[aria-hidden='true']");
     expect(icons2.length).toBeGreaterThan(0);
     expect(badge.textContent).toBeTruthy();
+  });
+});
+
+/**
+ * T-WU6.8 / QAL-A11Y-001-S3 — vitest-axe zero-violation assertions.
+ * SUGGESTION-3: WCAG 1.4.3 color-contrast is NOT exercised under jsdom; it is verified by the Playwright e2e sweep.
+ */
+describe("SimulationStatusBadge — axe zero-violations (T-WU6.8)", () => {
+  it("CURRENT: no axe violations", async () => {
+    const { container } = render(<SimulationStatusBadge status="CURRENT" />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it("OUTDATED: no axe violations", async () => {
+    const { container } = render(<SimulationStatusBadge status="OUTDATED" />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

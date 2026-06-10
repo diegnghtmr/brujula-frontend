@@ -170,7 +170,7 @@ function ProgressSummaryView() {
                         {pa.periodName ?? pa.periodId}
                       </span>
                       <span className="font-medium text-foreground ml-4 shrink-0">
-                        {pa.average.toFixed(2)}
+                        {pa.estimatedAverage.toFixed(2)}
                       </span>
                     </li>
                   ))}

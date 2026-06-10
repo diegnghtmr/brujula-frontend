@@ -59,6 +59,7 @@ const ACADEMIC_STATE_ICONS: Partial<
 };
 
 /** Label mapping per academic state (for screen readers and tooltips) */
+// eslint-disable-next-line react-refresh/only-export-components -- ACADEMIC_STATE_LABELS is a companion constant required by consuming components (CourseStatusBadge). Splitting to a separate file would create a circular dependency with BadgeProps.
 export const ACADEMIC_STATE_LABELS: Partial<
   Record<NonNullable<BadgeProps["variant"]>, string>
 > = {
@@ -89,4 +90,5 @@ function Badge({ className, variant, showIcon = false, children, ...props }: Bad
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- badgeVariants must be co-exported with Badge so consumers (e.g. Link elements styled as badges) can apply the same variants without rendering a Badge wrapper.
 export { Badge, badgeVariants };

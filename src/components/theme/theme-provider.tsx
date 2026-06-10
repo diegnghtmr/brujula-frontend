@@ -12,7 +12,7 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undef
 const STORAGE_KEY = "brujula-theme";
 
 interface ThemeProviderProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   defaultTheme?: Theme;
 }
 
@@ -59,5 +59,6 @@ function useTheme(): ThemeProviderState {
   return context;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- ThemeProvider and useTheme are a tightly coupled provider/consumer pair; splitting into separate files would require cross-file circular references. Provider files are not subject to fast-refresh HMR boundary issues.
 export { ThemeProvider, useTheme };
 export type { Theme };

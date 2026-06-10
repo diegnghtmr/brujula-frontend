@@ -68,7 +68,6 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
                 <td
                   key={day.key}
                   className="border border-border p-1 align-top min-h-[60px] w-[80px]"
-                  role="cell"
                   aria-label={
                     dayEntries.length > 0
                       ? dayEntries.map((e) => buildAriaLabel(e, day.label)).join("; ")

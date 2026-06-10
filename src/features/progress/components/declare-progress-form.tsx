@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -57,7 +58,14 @@ const declareAttemptSchema = z.object({
   periodId: z.string().min(1, { message: "El ID del período es requerido." }),
 });
 
-type DeclareAttemptFormData = z.infer<typeof declareAttemptSchema>;
+// Explicit output type: z.coerce.number() infers unknown for input but number for output.
+// Using z.infer<> here causes a zodResolver generic mismatch with @hookform/resolvers v5.
+// Defining the output type explicitly avoids the Resolver<input,ctx,output> incompatibility.
+interface DeclareAttemptFormData {
+  status: "PASSED" | "FAILED" | "CANCELLED";
+  finalGrade?: number | null;
+  periodId: string;
+}
 
 interface InlineDeclareFormProps {
   subscriptionId: string;
@@ -78,7 +86,10 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
     handleSubmit,
     formState: { errors },
   } = useForm<DeclareAttemptFormData>({
-    resolver: zodResolver(declareAttemptSchema),
+    // Cast required: @hookform/resolvers v5 types zodResolver as Resolver<input,any,output>.
+    // z.coerce.number() makes input type unknown, which is incompatible with form values type.
+    // The cast is safe because zodResolver correctly validates and transforms at runtime.
+    resolver: zodResolver(declareAttemptSchema) as unknown as Resolver<DeclareAttemptFormData>,
     defaultValues: { status: "PASSED", finalGrade: null, periodId: "" },
   });
 

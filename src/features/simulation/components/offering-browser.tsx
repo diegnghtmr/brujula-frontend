@@ -53,8 +53,9 @@ function ScheduleOptionRow({
         },
       },
       {
-        onError: (error: AxiosError) => {
-          const data = error.response?.data as {
+        onError: (error: Error) => {
+          const axiosError = error as AxiosError;
+          const data = axiosError.response?.data as {
             detail?: string;
             code?: string;
             metadata?: Record<string, unknown>;

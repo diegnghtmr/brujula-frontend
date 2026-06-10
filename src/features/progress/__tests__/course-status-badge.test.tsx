@@ -7,10 +7,14 @@
  *   - an icon element (aria-hidden)
  *
  * Statuses: PENDING, PASSED, FAILED, CANCELLED, AVAILABLE, BLOCKED
+ *
+ * WU6 (T-WU6.8 / QAL-A11Y-001-S3): vitest-axe assertions confirm zero
+ * axe violations at component level (jsdom, no backend required).
  */
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { axe } from "vitest-axe";
 import { CourseStatusBadge } from "@/features/progress/components/course-status-badge";
 import { CourseProgressStatus } from "@/api/generated/models/course-progress-status";
 
@@ -78,5 +82,36 @@ describe("CourseStatusBadge (CROSS-5-RENDER)", () => {
     );
     expect(screen.getByText("Bloqueada")).toBeInTheDocument();
     expect(screen.queryByText("[Recomendado]")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * T-WU6.8 / QAL-A11Y-001-S3 — vitest-axe zero-violation assertions.
+ *
+ * Runs axe-core at jsdom level for each status variant.
+ * Confirms badge structure (aria-label, aria-hidden icon, visible label)
+ * produces zero accessibility violations.
+ * SUGGESTION-3: WCAG 1.4.3 color-contrast is NOT exercised under jsdom; it is verified by the Playwright e2e sweep.
+ */
+describe("CourseStatusBadge — axe zero-violations (T-WU6.8)", () => {
+  const statuses = Object.values(CourseProgressStatus);
+
+  for (const status of statuses) {
+    it(`${status}: no axe violations`, async () => {
+      const { container } = render(<CourseStatusBadge status={status} />);
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
+    });
+  }
+
+  it("AVAILABLE with advisory chip: no axe violations", async () => {
+    const { container } = render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Available}
+        unmetRequirements={["Cálculo I"]}
+      />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

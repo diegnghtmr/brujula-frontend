@@ -34,9 +34,10 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
       onSuccess: () => {
         onReviewSuccess();
       },
-      onError: (error: AxiosError) => {
-        const status = error.response?.status;
-        const data = error.response?.data as {
+      onError: (error: Error) => {
+        const axiosError = error as AxiosError;
+        const status = axiosError.response?.status;
+        const data = axiosError.response?.data as {
           detail?: string;
           code?: string;
           message?: string;

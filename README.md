@@ -1,3 +1,35 @@
+# Brújula Frontend
+
+React 19 + TypeScript + Vite SPA for the Brújula academic planning platform.
+
+## Production Deployment — API Proxy Requirement
+
+**IMPORTANT**: The generated API client uses `/api/v1` as the base path (from the OpenAPI spec
+`servers: [{url: /api/v1}]`). The Spring Boot backend does NOT set
+`server.servlet.context-path=/api/v1` — controllers are mounted at root paths
+(`/me`, `/admin/*`, `/staff/*`, etc.).
+
+In development and the Docker compose preview container, Vite's proxy rewrites
+`/api/v1/*` → `/*` automatically. **In production this rewrite does NOT exist.**
+
+Any production reverse proxy (nginx, Caddy, Traefik, etc.) MUST perform this rewrite:
+
+```nginx
+# nginx example
+location /api/v1/ {
+    rewrite ^/api/v1/(.*)$ /$1 break;
+    proxy_pass http://brujula-backend:8080;
+}
+```
+
+**Alternative**: set `server.servlet.context-path=/api/v1` in the Spring Boot
+`application.yaml` to mount the backend at `/api/v1` directly, which eliminates
+the need for the reverse proxy rewrite.
+
+Without this configuration, the backend returns 404 for all API calls in production.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

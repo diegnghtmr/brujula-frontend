@@ -47,4 +47,5 @@ function Button({ className, variant, size, asChild = false, ...props }: ButtonP
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- buttonVariants must be co-exported with Button so consumers can apply button styles to non-button elements (e.g. Link components) without wrapping them in a Button.
 export { Button, buttonVariants };

@@ -22,7 +22,9 @@ const PLAN_STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    className: "text-green-600 dark:text-green-400",
+    // text-green-800 (#166534) gives ~5.4:1 against near-white — WCAG AA ✓
+    // (text-green-600 was #00a63e at 3.13:1 — insufficient)
+    className: "text-green-800 dark:text-green-400",
   },
   DRAFT: {
     label: "Borrador",

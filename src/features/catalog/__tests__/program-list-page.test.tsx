@@ -274,10 +274,14 @@ describe("ProgramCard — keyboard accessibility (WCAG 2.1.1)", () => {
     expect(onSelect).toHaveBeenCalledWith("prog-kbd");
   });
 
-  it("has tabIndex=0 when onSelect is provided", () => {
+  it("is keyboard-focusable (native button) when onSelect is provided", () => {
+    // WU6 a11y refactor: ProgramCard now renders a native <button> when interactive,
+    // so tabindex is implicit (not rendered as an attribute). The element must still
+    // be reachable by keyboard — verified by confirming it has the button role.
     render(<ProgramCard program={program} onSelect={() => {}} />);
     const card = screen.getByRole("button", { name: /programa: ingeniería electrónica/i });
-    expect(card).toHaveAttribute("tabindex", "0");
+    // Native buttons are focusable by default; no explicit tabindex needed
+    expect(card.tagName.toLowerCase()).toBe("button");
   });
 
   it("does not have button role when onSelect is not provided", () => {
