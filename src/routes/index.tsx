@@ -46,6 +46,7 @@ import { ProgressSummaryView } from "@/features/progress/components/progress-sum
 import { SimulationListPage } from "@/features/simulation/components/simulation-list-page";
 import { SimulationCreateForm } from "@/features/simulation/components/simulation-create-form";
 import { SimulationDetailPage } from "@/features/simulation/components/simulation-detail-page";
+import { ImportUploadPage } from "@/features/imports/components/import-upload-page";
 import { cn } from "@/lib/utils";
 
 /** Inline 403 page (no separate file needed — simple notice). */
@@ -201,6 +202,18 @@ function AppRoutes() {
           <RequireAuth>
             <AuthenticatedShell>
               <SimulationDetailPage />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+
+      {/* Imports route — STAFF-only, RequireAuth; backend enforces STAFF authorization */}
+      <Route
+        path="/imports/upload"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <ImportUploadPage />
             </AuthenticatedShell>
           </RequireAuth>
         }
