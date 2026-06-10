@@ -18,6 +18,7 @@ function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement
 
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
+    // eslint-disable-next-line jsx-a11y/heading-has-content -- generic wrapper: content always injected by callers via children prop; never rendered empty
     <h3
       className={cn("text-2xl font-semibold leading-none tracking-tight", className)}
       {...props}

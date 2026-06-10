@@ -18,7 +18,6 @@ describe("ThemeToggle", () => {
         store[key] = value;
       }),
       removeItem: vi.fn((key: string) => {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete store[key];
       }),
       clear: vi.fn(() => {
