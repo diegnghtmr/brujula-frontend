@@ -1509,6 +1509,11 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: Oferta duplicada o reuso inválido de `Idempotency-Key`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /staff/offerings/{offeringId}:
@@ -3490,6 +3495,13 @@ components:
             scheduleOptions:
               type: array
               items: { $ref: "#/components/schemas/ScheduleOption" }
+            intensityWarning:
+              type: boolean
+              nullable: true
+              description: >
+                Advisory flag. Present and true when any schedule option's computed weekly hours
+                do not match the curricular weekly hours for the course. Never blocks publication
+                (OFFW-005). Null when not computed (read-only queries).
     OfferingCreateRequest:
       type: object
       additionalProperties: false
