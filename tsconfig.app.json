@@ -27,13 +27,17 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@vitest/expect": ["./node_modules/.pnpm/@vitest+expect@3.2.6/node_modules/@vitest/expect"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
   "exclude": [
     "src/api/generated",
+    "src/vitest-axe.d.ts",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
     "node_modules"
   ]
 }
