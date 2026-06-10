@@ -1,0 +1,104 @@
+# Local/manual only — no remote runner configured; run via ci/run.sh or act
+#
+# To run locally with act:
+#   act push --job frontend-ci
+#
+# To run directly:
+#   bash ci/run.sh            # default gate (no Docker needed)
+#   bash ci/run-e2e.sh        # opt-in real-stack E2E (needs Docker)
+#
+# Gate semantics:
+#   frontend-ci job: lint + typecheck + unit tests — fast inner loop.
+#   e2e job: manual trigger only — needs Docker + full Compose stack.
+
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - "feature/fase-7-frontend"
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: "Run real-stack E2E (requires Docker)"
+        required: false
+        default: "false"
+        type: boolean
+
+jobs:
+  frontend-ci:
+    name: Frontend Quality Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11"
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate OpenAPI client + apply DEBT-F7-005 patch
+        # postapi:generate hook (scripts/patch-generated.mjs) runs automatically.
+        # Restores content: T[] on OfferingPage, SimulationPage, StaffPage
+        # after the generator collapses allOf(PageMeta + content) to a bare alias.
+        run: pnpm api:generate
+
+      - name: lint — ESLint + jsx-a11y (--max-warnings 0)
+        run: pnpm lint
+
+      - name: typecheck — tsc -b --noEmit
+        run: pnpm typecheck
+
+      - name: test — Vitest unit + component tests
+        run: pnpm test
+
+  e2e:
+    name: E2E Real-Stack (opt-in)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_e2e == 'true' }}
+    needs: frontend-ci
+
+    steps:
+      - name: Checkout brujula-frontend
+        uses: actions/checkout@v4
+
+      - name: Checkout brujula-backend (for compose.full.yaml)
+        uses: actions/checkout@v4
+        with:
+          repository: brujula-general/brujula-backend
+          path: brujula-backend
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "11"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run real-stack E2E
+        # Spins up compose.full.yaml (backend + Keycloak + Postgres + frontend),
+        # waits for health, runs Playwright real-stack project, tears down.
+        run: bash ci/run-e2e.sh
