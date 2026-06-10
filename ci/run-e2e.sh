@@ -63,8 +63,12 @@ docker compose -f "$COMPOSE_FILE" up -d --wait
 echo "    Stack is healthy."
 
 echo ""
-echo "--- [2/3] pnpm test:e2e --project=real-stack ---"
-pnpm test:e2e --project=real-stack
+echo "--- [2/3] pnpm test:e2e (real-stack + real-stack-staff) ---"
+# REAL_STACK gates globalSetup in playwright.config.ts: it performs the real
+# Keycloak OIDC login and writes storageState per role. Without it, globalSetup
+# is skipped and the suite runs with stale/absent sessions and fails.
+export REAL_STACK=1
+pnpm test:e2e --project=real-stack --project=real-stack-staff
 
 echo ""
 echo "--- [3/3] teardown (handled by EXIT trap) ---"
