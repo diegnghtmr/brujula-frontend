@@ -19,6 +19,13 @@
  *    disallows this syntax. The fix: rewrite the constructors to use explicit field declarations
  *    and assignments instead of parameter properties.
  *
+ * 3. OFFERING DETAIL COLLAPSE (OfferingDetail)
+ *    The OpenAPI TypeScript-Axios generator collapses `allOf(Offering + {scheduleOptions, intensityWarning})`
+ *    to a bare `Offering` alias, dropping `scheduleOptions: ScheduleOption[]` and
+ *    `intensityWarning: boolean | null`. The fix: rewrite offering-detail.ts to restore the
+ *    `Offering & { scheduleOptions?: ScheduleOption[]; intensityWarning?: boolean | null }` intersection,
+ *    matching the OpenAPI spec (scheduleOptions is required by spec, intensityWarning is nullable/optional).
+ *
  * This script is called automatically via the `postapi:generate` npm hook after every
  * `pnpm api:generate` run. It is idempotent: safe to run on already-patched files.
  *
@@ -115,7 +122,63 @@ function patchPageModel(original, target) {
 }
 
 // ---------------------------------------------------------------------------
-// Patch 2: base.ts — remove parameter properties (erasableSyntaxOnly fix)
+// Patch 2: offering-detail.ts — restore scheduleOptions + intensityWarning fields
+// ---------------------------------------------------------------------------
+
+const OFFERING_DETAIL_PATH = resolve(GENERATED_MODELS, "offering-detail.ts");
+
+/**
+ * Patch offering-detail.ts to restore the two fields dropped by allOf collapse.
+ *
+ * The OpenAPI spec defines OfferingDetail as:
+ *   allOf:
+ *     - $ref: Offering
+ *     - type: object
+ *       required: [scheduleOptions]
+ *       properties:
+ *         scheduleOptions: { type: array, items: $ref ScheduleOption }
+ *         intensityWarning: { type: boolean, nullable: true }
+ *
+ * The generator collapses this to `export type OfferingDetail = Offering`, dropping both fields.
+ *
+ * @param {string} original
+ * @returns {{ content: string, changed: boolean }}
+ */
+function patchOfferingDetail(original) {
+  // Already patched guard: intersection type is present (multiline check)
+  if (original.includes("OfferingDetail = Offering &")) {
+    return { content: original, changed: false };
+  }
+
+  const lines = original.split("\n");
+  // Find end of the generator banner (first line that is exactly " */")
+  const bannerEndIdx = lines.findIndex((l, i) => i > 0 && l.trim() === "*/");
+  const bannerLines = bannerEndIdx >= 0 ? lines.slice(0, bannerEndIdx + 1) : [];
+
+  const patched = [
+    ...bannerLines,
+    "",
+    `import type { Offering } from './offering';`,
+    `import type { ScheduleOption } from './schedule-option';`,
+    "",
+    `/**`,
+    ` * @type OfferingDetail`,
+    ` * Generator bug workaround: allOf(Offering + {scheduleOptions, intensityWarning}) collapses to Offering alias.`,
+    ` * Manually restored scheduleOptions and intensityWarning fields from OpenAPI spec.`,
+    ` * scheduleOptions is required per spec; intensityWarning is nullable (advisory flag, may be null for read-only queries).`,
+    ` */`,
+    `export type OfferingDetail = Offering & {`,
+    `    scheduleOptions: ScheduleOption[];`,
+    `    intensityWarning?: boolean | null;`,
+    `};`,
+    "",
+  ].join("\n");
+
+  return { content: patched, changed: true };
+}
+
+// ---------------------------------------------------------------------------
+// Patch 3: base.ts — remove parameter properties (erasableSyntaxOnly fix)
 // ---------------------------------------------------------------------------
 
 const BASE_TS_PATH = resolve(GENERATED, "base.ts");
@@ -233,6 +296,14 @@ const ALL_PATCHES = [
       return patchPageModel(orig, target);
     },
   })),
+  {
+    label: "models/offering-detail.ts",
+    file: OFFERING_DETAIL_PATH,
+    patch: () => {
+      const orig = readFileSync(OFFERING_DETAIL_PATH, "utf-8");
+      return patchOfferingDetail(orig);
+    },
+  },
   {
     label: "base.ts",
     file: BASE_TS_PATH,
