@@ -12,7 +12,7 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undef
 const STORAGE_KEY = "brujula-theme";
 
 interface ThemeProviderProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   defaultTheme?: Theme;
 }
 

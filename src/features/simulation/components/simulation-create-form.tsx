@@ -81,15 +81,16 @@ function SimulationCreateForm() {
       {
         name: data.name,
         periodId: data.periodId,
-        programIds: data.programIds,
+        programIds: new Set(data.programIds),
       },
       {
         onSuccess: (simulation) => {
           navigate(`/simulations/${simulation.id}`);
         },
-        onError: (error: AxiosError) => {
-          const status = error.response?.status;
-          const detail = (error.response?.data as { detail?: string } | undefined)?.detail;
+        onError: (error: Error) => {
+          const axiosError = error as AxiosError;
+          const status = axiosError.response?.status;
+          const detail = (axiosError.response?.data as { detail?: string } | undefined)?.detail;
           if (status === 422 || status === 400) {
             setApiError(detail ?? "Los datos del formulario no son válidos.");
           } else {

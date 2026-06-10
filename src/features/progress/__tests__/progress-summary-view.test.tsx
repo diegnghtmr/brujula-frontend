@@ -35,7 +35,7 @@ const PROGRESS_SUMMARY_WITH_ATTEMPTS = {
     {
       periodId: "period-1",
       periodName: null,
-      average: 3.85,
+      estimatedAverage: 3.85,
       courseCount: 8,
     },
   ],

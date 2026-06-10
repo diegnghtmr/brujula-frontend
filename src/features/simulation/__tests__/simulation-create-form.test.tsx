@@ -146,7 +146,7 @@ describe("SimulationCreateForm", () => {
 
     // Check first program
     const checkboxes = screen.getAllByRole("checkbox");
-    await user.click(checkboxes[0]);
+    await user.click(checkboxes[0]!);
 
     // Submit
     await user.click(screen.getByRole("button", { name: /crear simulación/i }));
@@ -155,10 +155,11 @@ describe("SimulationCreateForm", () => {
       expect(capturedIdempotencyKey).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
       );
-      // POST body must contain real periodId from fixture — not a hardcoded value
+      // POST body must contain real periodId and programIds from fixture — not hardcoded values
       expect(capturedBody).toMatchObject({
         name: "Mi Simulación Test",
         periodId: PERIOD_ID,
+        programIds: [PROGRAM_ID_1],
       });
     });
 
@@ -194,9 +195,9 @@ describe("SimulationCreateForm", () => {
 
     // Check all 3 programs
     const checkboxes = screen.getAllByRole("checkbox");
-    await user.click(checkboxes[0]);
-    await user.click(checkboxes[1]);
-    await user.click(checkboxes[2]);
+    await user.click(checkboxes[0]!);
+    await user.click(checkboxes[1]!);
+    await user.click(checkboxes[2]!);
 
     // Fill name and period
     await user.type(screen.getByRole("textbox", { name: /nombre/i }), "Sim Test");
@@ -244,7 +245,7 @@ describe("SimulationCreateForm", () => {
     await user.type(screen.getByRole("textbox", { name: /nombre/i }), "Sim");
     await user.selectOptions(screen.getByRole("combobox", { name: /período/i }), PERIOD_ID);
     const checkboxes = screen.getAllByRole("checkbox");
-    await user.click(checkboxes[0]);
+    await user.click(checkboxes[0]!);
 
     await user.click(screen.getByRole("button", { name: /crear simulación/i }));
 

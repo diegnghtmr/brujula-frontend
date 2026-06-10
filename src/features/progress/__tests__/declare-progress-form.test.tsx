@@ -163,7 +163,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await screen.findByText("Matemáticas Generales");
 
     // Open declare form for c-1
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     // Select PASSED
@@ -233,7 +233,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     await screen.findByText("Matemáticas Generales");
 
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     await waitFor(() => {
@@ -281,7 +281,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     await screen.findByText("Matemáticas Generales");
 
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     await waitFor(() => {
@@ -327,7 +327,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     await screen.findByText("Matemáticas Generales");
 
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     await waitFor(() => {
@@ -382,7 +382,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     await screen.findByText("Matemáticas Generales");
 
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     await waitFor(() => {
@@ -446,7 +446,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     await screen.findByText("Matemáticas Generales");
 
-    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0];
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
     await waitFor(() => {
