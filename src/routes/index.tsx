@@ -43,6 +43,7 @@ import { SubscriptionListPage } from "@/features/progress/components/subscriptio
 import { SubscribeForm } from "@/features/progress/components/subscribe-form";
 import { DeclareProgressForm } from "@/features/progress/components/declare-progress-form";
 import { ProgressSummaryView } from "@/features/progress/components/progress-summary-view";
+import { AttemptListPage } from "@/features/progress/components/attempt-list-page";
 import { SimulationListPage } from "@/features/simulation/components/simulation-list-page";
 import { SimulationCreateForm } from "@/features/simulation/components/simulation-create-form";
 import { SimulationDetailPage } from "@/features/simulation/components/simulation-detail-page";
@@ -170,6 +171,16 @@ function AppRoutes() {
           <RequireAuth>
             <AuthenticatedShell>
               <ProgressSummaryView />
+            </AuthenticatedShell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/progress/subscriptions/:subscriptionId/attempts"
+        element={
+          <RequireAuth>
+            <AuthenticatedShell>
+              <AttemptListPage />
             </AuthenticatedShell>
           </RequireAuth>
         }

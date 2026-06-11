@@ -22,7 +22,7 @@ import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "react-router";
+import { useParams, Link } from "react-router";
 import { ProgressApi } from "@/api/generated/api/progress-api";
 import { OfferingsApi } from "@/api/generated/api/offerings-api";
 import { createApiInstance } from "@/api/client";
@@ -374,13 +374,26 @@ function DeclareProgressForm() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground font-display">
-          Declarar avance académico
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Registrá los cursos que ya cursaste en este programa.
-        </p>
+      <header className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground font-display">
+            Declarar avance académico
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Registrá los cursos que ya cursaste en este programa.
+          </p>
+        </div>
+        {subscriptionId && (
+          <Link
+            to={`/progress/subscriptions/${subscriptionId}/attempts`}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+              "border-border hover:bg-muted/40 text-foreground"
+            )}
+          >
+            Ver historial de intentos
+          </Link>
+        )}
       </header>
 
       {isLoading && (
