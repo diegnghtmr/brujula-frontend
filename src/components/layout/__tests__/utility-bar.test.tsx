@@ -1,5 +1,5 @@
 /**
- * UtilityBar — RTL tests (WU-A, Task P0-4).
+ * UtilityBar — RTL tests (WU-A, Task P0-4 + FIX-2).
  *
  * Spec scenarios:
  * - UtilityBar renders in the document
@@ -8,6 +8,12 @@
  * - It shows authenticated-context links (NOT "Iniciar sesión")
  * - It applies semantic token classes (bg-secondary, rounded-none)
  * - It never collapses (no hidden class)
+ *
+ * FIX-2 — Dead-link fixes:
+ * - "Encontrar sede" → real external href + rel="noopener noreferrer"
+ * - "Ayuda" → real external href + rel="noopener noreferrer"
+ * - "Mi cuenta" is NOT rendered
+ * - No anchor may have href="#"
  */
 
 import { describe, it, expect } from "vitest";
@@ -87,5 +93,61 @@ describe("UtilityBar (WU-A / P0-4)", () => {
     if (container) {
       expect(container.className).not.toMatch(/\bhidden\b/);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FIX-2 — Dead-link fixes
+// ---------------------------------------------------------------------------
+
+describe("UtilityBar — FIX-2 (dead-link fixes)", () => {
+  it("'Encontrar sede' link has a real external href (not '#')", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const link = screen.getByRole("link", { name: /encontrar sede/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).not.toBe("#");
+    expect(href.startsWith("http")).toBe(true);
+  });
+
+  it("'Encontrar sede' has target='_blank' and rel='noopener noreferrer'", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const link = screen.getByRole("link", { name: /encontrar sede/i });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("'Ayuda' link has a real external href (not '#' and not mailto:)", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const link = screen.getByRole("link", { name: /ayuda/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(href).not.toBe("#");
+    expect(href.startsWith("http")).toBe(true);
+  });
+
+  it("'Ayuda' has target='_blank' and rel='noopener noreferrer'", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const link = screen.getByRole("link", { name: /ayuda/i });
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("'Mi cuenta' is NOT rendered", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    expect(screen.queryByRole("link", { name: /mi cuenta/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/mi cuenta/i)).not.toBeInTheDocument();
+  });
+
+  it("no anchor has href='#'", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const links = screen.getAllByRole("link");
+    for (const link of links) {
+      expect(link.getAttribute("href")).not.toBe("#");
+    }
+  });
+
+  it("exactly two links are rendered (Encontrar sede + Ayuda)", () => {
+    render(<UtilityBar />, { wrapper: createWrapper() });
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(2);
   });
 });
