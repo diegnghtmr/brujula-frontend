@@ -104,4 +104,20 @@ describe("Progress routes — RequireAuth guard", () => {
       screen.queryByText(/Avance académico/i)
     ).not.toBeInTheDocument();
   });
+
+  it("unauthenticated visit to /progress/subscriptions/:id/attempts redirects to /login", async () => {
+    // W-2: covers the attempt history route
+    setupUnauthed();
+
+    render(<AppRoutes />, {
+      wrapper: createWrapper(`/progress/subscriptions/${SUBSCRIPTION_ID}/attempts`),
+    });
+
+    // Positively assert: login page rendered
+    await screen.findByText(/iniciar sesión/i);
+    // Protected content not shown
+    expect(
+      screen.queryByText(/Historial de intentos/i)
+    ).not.toBeInTheDocument();
+  });
 });

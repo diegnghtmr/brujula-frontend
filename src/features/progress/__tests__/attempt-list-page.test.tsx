@@ -243,13 +243,22 @@ describe("AttemptListPage — edit success (C.3.4)", () => {
 // ---------------------------------------------------------------------------
 
 describe("AttemptListPage — 409 conflict (C.3.5)", () => {
-  it("shows role=alert notice, refetches list, form stays open with typed values", async () => {
+  it("shows role=alert notice, refetches list, form stays open with typed values, retry uses refreshed version", async () => {
     let getCallCount = 0;
+    let secondPutBody: unknown = null;
+
+    // On the second GET (triggered by invalidation after 409), return bumped version.
+    // This proves that InlineEditForm receives the updated attempt prop and onSubmit
+    // reads attempt.version from the live prop — not from stale defaultValues.
+    const ATTEMPT_1_BUMPED = { ...ATTEMPT_1, version: 1 };
 
     server.use(
       http.get("/api/v1/me/course-attempts", () => {
         getCallCount++;
-        return HttpResponse.json(PAGE_RESPONSE_1);
+        const content = getCallCount >= 2
+          ? [ATTEMPT_1_BUMPED, ATTEMPT_2]
+          : [ATTEMPT_1, ATTEMPT_2];
+        return HttpResponse.json({ ...PAGE_RESPONSE_1, content });
       }),
       http.get("/api/v1/periods", () => HttpResponse.json(PERIODS)),
       http.put("/api/v1/me/course-attempts/:id", () =>
@@ -295,6 +304,27 @@ describe("AttemptListPage — 409 conflict (C.3.5)", () => {
 
     // Assert: grade input still has typed value (form not reset)
     expect(screen.getByRole("spinbutton", { name: /nota/i })).toHaveValue(3.8);
+
+    // W-3: Now install a PUT handler that returns 200 and captures the body.
+    // The component already received ATTEMPT_1_BUMPED (version: 1) via the second GET.
+    // Re-submitting must use the refreshed version from the live attempt prop.
+    server.use(
+      http.put("/api/v1/me/course-attempts/:id", async ({ request }) => {
+        secondPutBody = await request.json();
+        return HttpResponse.json(ATTEMPT_1_BUMPED);
+      })
+    );
+
+    // Re-submit — this time PUT returns 200
+    const saveButtonRetry = screen.getByRole("button", { name: /guardar cambios/i });
+    await userEvent.click(saveButtonRetry);
+
+    // Assert: second PUT body carries the REFRESHED version (> 0), not the stale version 0.
+    // This test FAILS if onSubmit reads version from defaultValues instead of attempt.version.
+    await waitFor(() => {
+      expect(secondPutBody).not.toBeNull();
+      expect((secondPutBody as { version: number }).version).toBeGreaterThan(0);
+    });
   });
 });
 
@@ -477,7 +507,11 @@ describe("SubscriptionListPage — 'Ver historial' link (C.3.9)", () => {
       }
     );
 
-    const historialLink = await screen.findByRole("button", { name: /ver historial/i });
+    const historialLink = await screen.findByRole("link", { name: /ver historial/i });
     expect(historialLink).toBeInTheDocument();
+    expect(historialLink).toHaveAttribute(
+      "href",
+      "/progress/subscriptions/sub-c-1/attempts"
+    );
   });
 });
