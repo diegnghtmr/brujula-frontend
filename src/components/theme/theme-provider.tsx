@@ -20,6 +20,10 @@ interface ThemeProviderProps {
  * ThemeProvider — light/dark via .dark class on <html>.
  * DESIGN §8: persist user preference in localStorage,
  * initialize from prefers-color-scheme when no stored preference exists.
+ *
+ * WU-1 Fix C: theme switch is now atomic — no staggered repaint.
+ * C-2 Fix: useEffect cleanup cancels pending rAFs and removes theme-no-transitions
+ * on unmount or rapid re-run, preventing stale callbacks from running.
  */
 function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -33,10 +37,35 @@ function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
+  // Apply theme class on mount and whenever theme state changes.
+  // Technique (WU-1 Fix C / C-2):
+  // 1. Add `theme-no-transitions` to <html> — CSS rule disables ALL transitions.
+  // 2. Flip the `.dark` / `.light` class on <html>.
+  // 3. Remove `theme-no-transitions` after a double-rAF (safest cross-browser approach).
+  // Cleanup: cancel pending rAFs and remove the class on unmount or rapid toggle
+  // so a stale inner rAF never removes the class added by a newer effect.
   useEffect(() => {
+    let cancelled = false;
+    let innerHandle = 0;
     const root = window.document.documentElement;
+
+    root.classList.add("theme-no-transitions");
     root.classList.remove("light", "dark");
     root.classList.add(theme);
+
+    const outerHandle = requestAnimationFrame(() => {
+      if (cancelled) return;
+      innerHandle = requestAnimationFrame(() => {
+        if (!cancelled) root.classList.remove("theme-no-transitions");
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(outerHandle);
+      if (innerHandle) cancelAnimationFrame(innerHandle);
+      root.classList.remove("theme-no-transitions");
+    };
   }, [theme]);
 
   function setTheme(newTheme: Theme) {

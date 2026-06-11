@@ -12,6 +12,7 @@
 @import "@fontsource/hanken-grotesk/400.css";
 @import "@fontsource/hanken-grotesk/500.css";
 @import "@fontsource/hanken-grotesk/600.css";
+@import "@fontsource/hanken-grotesk/700.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
 
@@ -22,8 +23,8 @@
   /* ------------------------------------------------------------------ */
   /* Typography                                                           */
   /* ------------------------------------------------------------------ */
-  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* ------------------------------------------------------------------ */
@@ -45,15 +46,40 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Chart tokens */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar tokens */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   /* Academic state tokens */
   --color-state-aprobada: var(--state-aprobada);
@@ -94,45 +120,81 @@
   --popover: oklch(0.99 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Primary — deep institutional blue */
-  --primary: oklch(0.35 0.18 264);
+  /* Primary — monochrome (DESIGN.md §2.2 / §7.1: #111111 light, #fafafa dark) */
+  --primary: oklch(0.145 0 0);
   --primary-foreground: oklch(0.98 0 0);
 
-  /* Secondary */
-  --secondary: oklch(0.96 0.005 264);
-  --secondary-foreground: oklch(0.25 0.05 264);
+  /* Secondary — neutral grey surface (DESIGN.md §7.1: #f5f5f5) */
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.145 0 0);
 
   /* Muted */
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.5 0 0);
 
-  /* Accent */
-  --accent: oklch(0.96 0.005 264);
-  --accent-foreground: oklch(0.25 0.05 264);
+  /* Accent — neutral hover/selection (DESIGN.md §7.1: #f0f0f0) */
+  --accent: oklch(0.95 0 0);
+  --accent-foreground: oklch(0.145 0 0);
 
   /* Destructive */
   --destructive: oklch(0.55 0.22 29);
   --destructive-foreground: oklch(0.98 0 0);
 
-  /* Success */
+  /* Destructive subtle (DESIGN.md §2.3 / §7.1: #fdeaea / #780700) */
+  --destructive-subtle: oklch(0.96 0.03 29);
+  --destructive-subtle-foreground: oklch(0.35 0.2 29);
+
+  /* Success (DESIGN.md §2.4 / §7.1: #007d48 / #ffffff) */
   --success: oklch(0.55 0.18 145);
   --success-foreground: oklch(0.98 0 0);
 
-  /* Warning */
-  --warning: oklch(0.72 0.18 85);
-  --warning-foreground: oklch(0.15 0 0);
+  /* Success subtle (DESIGN.md §7.1: #e6f4ee / #00562f) */
+  --success-subtle: oklch(0.96 0.04 145);
+  --success-subtle-foreground: oklch(0.38 0.15 145);
 
-  /* Info */
-  --info: oklch(0.55 0.18 230);
+  /* Warning (DESIGN.md §2.4 / §7.1: #b45309 / #ffffff)
+   * FIX 4: §2.4 specifies #b45309 (dark amber). oklch(0.52 0.13 58) ≈ #b45309.
+   * Contrast: text-warning on white (#fff) ≈ 4.6:1 ✓ WCAG AA; bg-warning + white text ≈ 4.6:1 ✓
+   * Previous oklch(0.65 0.18 65) was too light at ~3.27:1. */
+  --warning: oklch(0.52 0.13 58);
+  --warning-foreground: oklch(0.98 0 0);
+
+  /* Warning subtle (DESIGN.md §7.1: #fdf1e3 / #7a3a06) */
+  --warning-subtle: oklch(0.97 0.04 80);
+  --warning-subtle-foreground: oklch(0.42 0.14 65);
+
+  /* Info (DESIGN.md §2.4 / §7.1: #1151ff / #ffffff) */
+  --info: oklch(0.55 0.24 264);
   --info-foreground: oklch(0.98 0 0);
 
-  /* Border / Input / Ring */
+  /* Info subtle (DESIGN.md §7.1: #e7edff / #0034e3) */
+  --info-subtle: oklch(0.96 0.04 264);
+  --info-subtle-foreground: oklch(0.38 0.22 264);
+
+  /* Border / Input / Ring (DESIGN.md §7.1: #e5e5e5 / #111111) */
   --border: oklch(0.9 0 0);
   --input: oklch(0.9 0 0);
-  --ring: oklch(0.35 0.18 264);
+  --ring: oklch(0.145 0 0);
 
   /* Border radius base */
-  --radius: 0.5rem;
+  --radius: 0.75rem;
+
+  /* Charts (DESIGN.md §2.5 / §7.1) */
+  --chart-1: oklch(0.55 0.24 264);
+  --chart-2: oklch(0.55 0.18 145);
+  --chart-3: oklch(0.65 0.18 65);
+  --chart-4: oklch(0.55 0.12 210);
+  --chart-5: oklch(0.6 0.25 330);
+
+  /* Sidebar (DESIGN.md §2.6 / §7.1) */
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.145 0 0);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.145 0 0);
 
   /* Academic state colors — WCAG 2.2 AA (≥4.5:1 against #f8f8f8 foreground)
    * Contrast ratios verified against #f8f8f8 (oklch(0.98 0 0)) via apca-w3 tool:
@@ -170,42 +232,86 @@
 /* Dark theme                                                          */
 /* ------------------------------------------------------------------ */
 .dark {
-  --background: oklch(0.13 0.01 264);
+  /* DESIGN.md §7.1: #0a0a0b / #f5f5f5 */
+  --background: oklch(0.09 0 0);
   --foreground: oklch(0.97 0 0);
 
-  --card: oklch(0.17 0.01 264);
+  /* DESIGN.md §7.1: #141416 / #f5f5f5 */
+  --card: oklch(0.12 0 0);
   --card-foreground: oklch(0.97 0 0);
 
-  --popover: oklch(0.17 0.01 264);
+  --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.97 0 0);
 
-  --primary: oklch(0.65 0.18 264);
-  --primary-foreground: oklch(0.1 0 0);
+  /* Primary — monochrome (DESIGN.md §7.1: #fafafa / #111111) */
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.145 0 0);
 
-  --secondary: oklch(0.22 0.02 264);
-  --secondary-foreground: oklch(0.85 0 0);
+  /* Secondary — neutral dark surface (DESIGN.md §7.1: #1f1f22 / #f5f5f5) */
+  --secondary: oklch(0.163 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
 
-  --muted: oklch(0.22 0.01 264);
+  /* Muted (DESIGN.md §7.1: #1f1f22 / #9e9ea0) */
+  --muted: oklch(0.163 0 0);
   --muted-foreground: oklch(0.65 0 0);
 
-  --accent: oklch(0.22 0.02 264);
-  --accent-foreground: oklch(0.85 0 0);
+  /* Accent — neutral dark hover/selection (DESIGN.md §7.1: #26262a / #f5f5f5) */
+  --accent: oklch(0.19 0 0);
+  --accent-foreground: oklch(0.97 0 0);
 
+  /* Destructive (DESIGN.md §7.1: #f5333a / #ffffff) */
   --destructive: oklch(0.6 0.22 29);
   --destructive-foreground: oklch(0.98 0 0);
 
+  /* Destructive subtle (DESIGN.md §7.1: #2a0f10 / #ff9ea0) */
+  --destructive-subtle: oklch(0.18 0.06 29);
+  --destructive-subtle-foreground: oklch(0.8 0.1 29);
+
+  /* Success (DESIGN.md §7.1: #1eaa52 / #052e18) */
   --success: oklch(0.6 0.18 145);
-  --success-foreground: oklch(0.1 0 0);
+  --success-foreground: oklch(0.18 0.08 145);
 
-  --warning: oklch(0.75 0.18 85);
-  --warning-foreground: oklch(0.1 0 0);
+  /* Success subtle (DESIGN.md §7.1: #10271c / #74e0a3) */
+  --success-subtle: oklch(0.18 0.05 145);
+  --success-subtle-foreground: oklch(0.78 0.15 145);
 
-  --info: oklch(0.6 0.18 230);
-  --info-foreground: oklch(0.1 0 0);
+  /* Warning (DESIGN.md §7.1: #e0a127 / #2a1c05) */
+  --warning: oklch(0.75 0.18 80);
+  --warning-foreground: oklch(0.18 0.06 80);
 
-  --border: oklch(0.28 0.02 264);
-  --input: oklch(0.28 0.02 264);
-  --ring: oklch(0.65 0.18 264);
+  /* Warning subtle (DESIGN.md §7.1: #2a2008 / #f3cf86) */
+  --warning-subtle: oklch(0.19 0.04 80);
+  --warning-subtle-foreground: oklch(0.85 0.12 80);
+
+  /* Info (DESIGN.md §7.1: #5b8cff / #061233) */
+  --info: oklch(0.6 0.2 264);
+  --info-foreground: oklch(0.15 0.08 264);
+
+  /* Info subtle (DESIGN.md §7.1: #131d3d / #a9c2ff) */
+  --info-subtle: oklch(0.18 0.06 264);
+  --info-subtle-foreground: oklch(0.75 0.12 264);
+
+  /* Border / Input / Ring (DESIGN.md §7.1: #2a2a2e / #d4d4d8) */
+  --border: oklch(0.22 0 0);
+  --input: oklch(0.22 0 0);
+  --ring: oklch(0.84 0 0);
+
+  /* Charts (DESIGN.md §2.5 / §7.1 dark values) */
+  --chart-1: oklch(0.6 0.2 264);
+  --chart-2: oklch(0.6 0.18 145);
+  --chart-3: oklch(0.75 0.18 80);
+  --chart-4: oklch(0.62 0.12 210);
+  --chart-5: oklch(0.68 0.25 330);
+
+  /* Sidebar (DESIGN.md §2.6 / §7.1 dark values) */
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.163 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.84 0 0);
 
   --state-aprobada: oklch(0.6 0.18 145);
   --state-aprobada-foreground: oklch(0.1 0 0);
@@ -225,8 +331,34 @@
   --state-habilitada: oklch(0.7 0.18 300);
   --state-habilitada-foreground: oklch(0.1 0 0);
 
-  --state-bloqueada: oklch(0.4 0.02 264);
+  --state-bloqueada: oklch(0.4 0.02 0);
   --state-bloqueada-foreground: oklch(0.75 0 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* color-scheme — native controls and scrollbars match active theme    */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------ */
+/* Atomic theme switch — disable transitions during theme change       */
+/* (WU-1 Fix C): ThemeProvider adds this class before flipping the     */
+/* .dark / .light class, then removes it on the next rAF frame.        */
+/* This prevents shadcn primitives from animating their colors while   */
+/* body background has already flipped (staggered repaint).            */
+/* Hover/focus transitions are unaffected because this class is only   */
+/* present for one paint cycle.                                        */
+/* ------------------------------------------------------------------ */
+.theme-no-transitions *,
+.theme-no-transitions *::before,
+.theme-no-transitions *::after {
+  transition: none !important;
 }
 
 /* ------------------------------------------------------------------ */

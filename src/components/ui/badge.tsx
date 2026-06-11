@@ -29,14 +29,14 @@ const badgeVariants = cva(
         warning: "border-transparent bg-warning text-warning-foreground",
         info: "border-transparent bg-info text-info-foreground",
 
-        // Academic enrollment state variants (DESIGN §6.3)
-        aprobada: "border-transparent bg-state-aprobada text-state-aprobada-foreground",
-        "en-curso": "border-transparent bg-state-en-curso text-state-en-curso-foreground",
-        cancelada: "border-transparent bg-state-cancelada text-state-cancelada-foreground",
-        reprobada: "border-transparent bg-state-reprobada text-state-reprobada-foreground",
-        pendiente: "border-transparent bg-state-pendiente text-state-pendiente-foreground",
-        habilitada: "border-transparent bg-state-habilitada text-state-habilitada-foreground",
-        bloqueada: "border-transparent bg-state-bloqueada text-state-bloqueada-foreground",
+        // Academic enrollment state variants (DESIGN §6.3 subtle/outline/muted mapping)
+        aprobada: "border-transparent bg-success-subtle text-success-subtle-foreground",
+        "en-curso": "border-transparent bg-info-subtle text-info-subtle-foreground",
+        cancelada: "border-transparent bg-warning-subtle text-warning-subtle-foreground",
+        reprobada: "border-transparent bg-destructive-subtle text-destructive-subtle-foreground",
+        pendiente: "border-transparent bg-muted text-muted-foreground",
+        habilitada: "border border-success bg-background text-success-subtle-foreground",
+        bloqueada: "border-transparent bg-muted text-muted-foreground",
       },
     },
     defaultVariants: {

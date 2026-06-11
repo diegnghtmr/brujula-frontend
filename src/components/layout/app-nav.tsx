@@ -29,7 +29,8 @@ function AppNav() {
               end={to === "/dashboard"}
               className={({ isActive }) =>
                 cn(
-                  "px-3 py-1.5 text-sm font-medium rounded transition-colors",
+                  // §6.12/§9: nav links use border-b underline, no pill geometry
+                  "px-3 py-1.5 text-sm font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                   isActive
                     ? "text-foreground border-b-2 border-primary"
