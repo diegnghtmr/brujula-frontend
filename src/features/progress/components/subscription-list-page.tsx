@@ -149,6 +149,18 @@ function SubscriptionListPage() {
                     Ver malla
                   </Link>
                 )}
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(`/progress/subscriptions/${sub.id}/attempts`)
+                  }
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+                    "border-border hover:bg-muted/40"
+                  )}
+                >
+                  Ver historial
+                </button>
               </div>
             </li>
           ))}

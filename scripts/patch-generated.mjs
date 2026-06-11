@@ -77,6 +77,12 @@ const PAGE_PATCH_TARGETS = [
     contentType: "Staff",
     contentImport: "./staff",
   },
+  {
+    file: "course-attempt-page.ts",
+    typeName: "CourseAttemptPage",
+    contentType: "CourseAttempt",
+    contentImport: "./course-attempt",
+  },
 ];
 
 /**
