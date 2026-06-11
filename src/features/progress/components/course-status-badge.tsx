@@ -118,7 +118,6 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
             "bg-red-50 text-red-800 border-red-300",
             "dark:bg-red-900/20 dark:text-red-300 dark:border-red-700"
           )}
-          role="note"
           aria-label={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
           title={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
         >

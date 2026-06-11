@@ -113,6 +113,13 @@ describe("CourseStatusBadge (CROSS-5-RENDER)", () => {
     expect(screen.queryByText(/Falta:/)).not.toBeInTheDocument();
   });
 
+  it("does NOT show blocking reason chip when BLOCKED and unmetRequirements is undefined (omitted)", () => {
+    // unmetRequirements prop is intentionally omitted — must not crash and must not render chip
+    render(<CourseStatusBadge status={CourseProgressStatus.Blocked} />);
+    expect(screen.getByText("Bloqueada")).toBeInTheDocument();
+    expect(screen.queryByText(/Falta:/)).not.toBeInTheDocument();
+  });
+
   it("does NOT show blocking reason chip on AVAILABLE courses (available with unmetRequirements shows [Recomendado] only)", () => {
     render(
       <CourseStatusBadge
