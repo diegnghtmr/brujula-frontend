@@ -29,6 +29,7 @@ import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import type { CurriculumCourse } from "@/api/generated/models/curriculum-course";
 import { AttemptStatus } from "@/api/generated/models/attempt-status";
+import { BackLink } from "@/components/layout/back-link";
 import { CourseStatusBadge } from "./course-status-badge";
 import { cn } from "@/lib/utils";
 
@@ -153,8 +154,8 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: load error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           No se pudieron cargar los períodos académicos. Intentá nuevamente.
@@ -166,8 +167,8 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: API error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           {apiError}
@@ -193,7 +194,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
             className={cn(
               "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
-              errors.status && "border-red-500"
+              errors.status && "border-destructive"
             )}
             {...register("status")}
             onChange={(e) => {
@@ -208,7 +209,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
             <option value="CANCELLED">Cancelada</option>
           </select>
           {errors.status && (
-            <p className="text-xs text-red-600">{errors.status.message}</p>
+            <p className="text-xs text-destructive">{errors.status.message}</p>
           )}
         </div>
 
@@ -228,12 +229,12 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
               className={cn(
                 "border rounded px-2 py-1.5 text-sm bg-background text-foreground w-24",
                 "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.finalGrade && "border-red-500"
+                errors.finalGrade && "border-destructive"
               )}
               {...register("finalGrade")}
             />
             {errors.finalGrade && (
-              <p className="text-xs text-red-600">{errors.finalGrade.message}</p>
+              <p className="text-xs text-destructive">{errors.finalGrade.message}</p>
             )}
           </div>
         )}
@@ -251,7 +252,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
               "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              errors.periodId && "border-red-500"
+              errors.periodId && "border-destructive"
             )}
             {...register("periodId")}
           >
@@ -271,7 +272,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
             ))}
           </select>
           {errors.periodId && (
-            <p className="text-xs text-red-600">{errors.periodId.message}</p>
+            <p className="text-xs text-destructive">{errors.periodId.message}</p>
           )}
         </div>
 
@@ -313,8 +314,9 @@ interface CourseRowProps {
 function CourseRow({ subscriptionId, referenceJourneyCode, course }: CourseRowProps) {
   const [declaring, setDeclaring] = useState(false);
 
+  // §6.4/§5.1: content tile → rounded-none
   return (
-    <li className={cn("p-3 border rounded bg-card border-border")}>
+    <li className={cn("p-3 border rounded-none bg-card border-border")}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <span className="text-sm font-medium text-foreground truncate">
@@ -374,7 +376,8 @@ function DeclareProgressForm() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <header className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+      <BackLink to="/progress/subscriptions" />
+      <header className="flex items-start justify-between gap-4 mb-6 mt-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground font-display">
             Declarar avance académico

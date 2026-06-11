@@ -17,14 +17,16 @@ function SelectionRow({ selection, onRemove, isRemoving }: SelectionRowProps) {
     .map((s) => `${s.day?.slice(0, 3)} ${s.startsAt}–${s.endsAt}`)
     .join(", ");
 
+  // §6.4/§5.1: content tile → rounded-none
   return (
-    <li className="p-3 border rounded bg-card border-border flex items-start justify-between gap-3">
+    <li className="p-3 border rounded-none bg-card border-border flex items-start justify-between gap-3">
       <div className="flex flex-col gap-0.5 flex-1 min-w-0">
         <span className="text-sm font-medium text-foreground truncate">
           {selection.courseName}
         </span>
         <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-          <span>{selection.credits} cr</span>
+          {/* §3.1/§9: tabular-nums for numeric credits */}
+          <span className="tabular-nums">{selection.credits} cr</span>
           <span>{selection.journeyCode}</span>
           {sessionSummary && <span>{sessionSummary}</span>}
         </div>
@@ -33,7 +35,8 @@ function SelectionRow({ selection, onRemove, isRemoving }: SelectionRowProps) {
             {selection.warnings.map((w, idx) => (
               <span
                 key={idx}
-                className="text-xs text-yellow-700 dark:text-yellow-300"
+                // §2.4: warning notice → warning-subtle-foreground (text on default bg)
+                className="text-xs text-warning-subtle-foreground"
               >
                 <span aria-hidden="true">▲</span> {w.message}
               </span>
@@ -48,8 +51,8 @@ function SelectionRow({ selection, onRemove, isRemoving }: SelectionRowProps) {
         aria-label={`Eliminar ${selection.courseName}`}
         className={cn(
           "shrink-0 px-2 py-1 text-xs font-medium rounded border transition-colors",
-          "border-red-300 text-red-600 hover:bg-red-50",
-          "dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20",
+          // §6.1/§2.3: destructive outline action button
+          "border-destructive text-destructive hover:bg-destructive-subtle",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >

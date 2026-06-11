@@ -81,14 +81,16 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
                         className={cn(
                           "p-1 rounded text-xs font-medium border",
                           entry.inClash
-                            ? "bg-red-100 text-red-800 border-red-400 dark:bg-red-900/40 dark:text-red-300 dark:border-red-600"
-                            : "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700"
+                            // §2.4/§6.7: conflict/choque → destructive-subtle
+                            ? "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
+                            // §2.4/§6.7: normal session → info-subtle (en curso)
+                            : "bg-info-subtle text-info-subtle-foreground border-transparent"
                         )}
                       >
                         <div className="flex items-center gap-0.5">
                           {/* WCAG: clash icon in addition to color — never color alone */}
                           {entry.inClash && (
-                            <span aria-hidden="true" className="text-red-600 font-bold">⚠</span>
+                            <span aria-hidden="true" className="text-destructive font-bold">⚠</span>
                           )}
                           <span className="truncate">{entry.courseName}</span>
                         </div>
@@ -97,7 +99,7 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
                         </div>
                         {/* WCAG: clash text label — required in addition to color + icon */}
                         {entry.inClash && (
-                          <div className="text-[10px] text-red-700 dark:text-red-400 font-semibold">
+                          <div className="text-[10px] text-destructive font-semibold">
                             Choque de horario
                           </div>
                         )}

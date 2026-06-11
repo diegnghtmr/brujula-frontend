@@ -39,13 +39,13 @@ function ValidationNoticeList({ validation }: ValidationNoticeListProps) {
           role="alert"
           className={cn(
             "p-3 rounded border",
-            "bg-red-50 border-red-300 text-red-900",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-200"
+            // §2.4: blocking/error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           <div className="flex items-center gap-1.5 mb-2">
             {/* WCAG: icon + label (not color alone) */}
-            <span aria-hidden="true" className="font-bold text-red-600 dark:text-red-400">✕</span>
+            <span aria-hidden="true" className="font-bold text-destructive">✕</span>
             <span className="text-xs font-bold uppercase tracking-wide">Bloqueos activos</span>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -63,13 +63,13 @@ function ValidationNoticeList({ validation }: ValidationNoticeListProps) {
           aria-label="Advertencias"
           className={cn(
             "p-3 rounded border",
-            "bg-yellow-50 border-yellow-300 text-yellow-900",
-            "dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-200"
+            // §2.4: advertencia/warning → warning-subtle
+            "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
         >
           <div className="flex items-center gap-1.5 mb-2">
             {/* WCAG: icon + label (not color alone) */}
-            <span aria-hidden="true" className="font-bold text-yellow-600 dark:text-yellow-400">▲</span>
+            <span aria-hidden="true" className="font-bold text-warning">▲</span>
             <span className="text-xs font-bold uppercase tracking-wide">Advertencias</span>
           </div>
           <div className="flex flex-col gap-1.5">

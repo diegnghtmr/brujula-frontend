@@ -59,14 +59,14 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
     <div
       className={cn(
         "p-4 rounded border",
-        "bg-yellow-50 border-yellow-400 text-yellow-900",
-        "dark:bg-yellow-900/20 dark:border-yellow-600 dark:text-yellow-200"
+        // §2.4/§6.8: desactualizada → warning-subtle (notice banner)
+        "bg-warning-subtle text-warning-subtle-foreground border-transparent"
       )}
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           {/* WCAG: icon + text label (not color alone) */}
-          <span aria-hidden="true" className="text-yellow-600 dark:text-yellow-400 text-lg">⚠</span>
+          <span aria-hidden="true" className="text-warning text-lg">⚠</span>
           <div>
             <p className="font-semibold text-sm">Simulación desactualizada</p>
             <p className="text-xs mt-0.5">
@@ -81,8 +81,8 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
           aria-label="Revisar simulación"
           className={cn(
             "shrink-0 px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-            "bg-yellow-600 text-white border-yellow-700 hover:bg-yellow-700",
-            "dark:bg-yellow-700 dark:border-yellow-600 dark:hover:bg-yellow-800",
+            // §6.1: secondary action in context of warning banner
+            "bg-warning text-warning-foreground border-transparent hover:opacity-90",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >
@@ -95,8 +95,8 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
           role="alert"
           className={cn(
             "mt-3 p-2 rounded border text-xs",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: blocking error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           <span aria-hidden="true" className="font-bold mr-1">✕</span>

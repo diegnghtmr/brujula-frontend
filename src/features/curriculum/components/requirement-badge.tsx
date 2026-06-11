@@ -16,21 +16,24 @@ const CONFIDENCE_CONFIG = {
     label: "ALTA",
     icon: "🔒",
     textIcon: "■",
-    className: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    // §2.4: high confidence (confirmed requirement) → success-subtle
+    className: "bg-success-subtle text-success-subtle-foreground border-transparent",
     advisory: false,
   },
   MEDIUM: {
     label: "MEDIA",
     icon: "ℹ",
     textIcon: "▲",
-    className: "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700",
+    // §2.4: medium (advisory/sugerido) → warning-subtle
+    className: "bg-warning-subtle text-warning-subtle-foreground border-transparent",
     advisory: true,
   },
   LOW: {
     label: "BAJA",
     icon: "ℹ",
     textIcon: "▽",
-    className: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-600",
+    // §2.4: low confidence (inferred, neutral) → muted
+    className: "bg-muted text-muted-foreground border-border",
     advisory: true,
   },
 } as const;

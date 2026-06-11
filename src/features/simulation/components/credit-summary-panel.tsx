@@ -25,8 +25,10 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
             className={cn(
               "p-3 rounded border",
               withinLimit
-                ? "bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-700"
-                : "bg-orange-50 border-orange-300 dark:bg-orange-900/20 dark:border-orange-600"
+                // §2.4: within limit (éxito) → success-subtle
+                ? "bg-success-subtle border-transparent"
+                // §2.4: exceeds limit (advertencia) → warning-subtle
+                : "bg-warning-subtle border-transparent"
             )}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -39,11 +41,11 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
                     <span
                       role="img"
                       aria-label="Dentro del límite"
-                      className="text-green-600 dark:text-green-400"
+                      className="text-success"
                     >
                       ✓
                     </span>
-                    <span className="text-xs text-green-700 dark:text-green-300 font-medium sr-only">
+                    <span className="text-xs text-success-subtle-foreground font-medium sr-only">
                       Dentro del límite
                     </span>
                   </>
@@ -53,11 +55,11 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
                     <span
                       role="img"
                       aria-label="Límite superado"
-                      className="text-orange-600 dark:text-orange-400"
+                      className="text-warning"
                     >
                       ⚠
                     </span>
-                    <span className="text-xs text-orange-700 dark:text-orange-300 font-semibold">
+                    <span className="text-xs text-warning-subtle-foreground font-semibold">
                       Límite superado
                     </span>
                   </>
@@ -65,9 +67,10 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
               </div>
             </div>
             <div className="mt-1 text-sm text-foreground">
-              <span className="font-semibold">{selectedCredits}</span>
+              {/* §3.1/§9: tabular-nums for numeric credit values */}
+              <span className="font-semibold tabular-nums">{selectedCredits}</span>
               {" / "}
-              <span>{creditLimit}</span>
+              <span className="tabular-nums">{creditLimit}</span>
               {" créditos"}
             </div>
           </div>

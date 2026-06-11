@@ -13,6 +13,7 @@ import { useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
+import { BackLink } from "@/components/layout/back-link";
 import { JourneyBadge } from "./journey-badge";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +23,22 @@ const PLAN_STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    // text-green-800 (#166534) gives ~5.4:1 against near-white — WCAG AA ✓
-    // (text-green-600 was #00a63e at 3.13:1 — insufficient)
-    className: "text-green-800 dark:text-green-400",
+    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    iconClassName: "text-success",
+    labelClassName: "text-foreground",
   },
   DRAFT: {
     label: "Borrador",
     icon: "◑",
-    className: "text-yellow-600 dark:text-yellow-400",
+    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    iconClassName: "text-warning",
+    labelClassName: "text-foreground",
   },
   ARCHIVED: {
     label: "Archivado",
     icon: "◌",
-    className: "text-muted-foreground",
+    iconClassName: "text-muted-foreground",
+    labelClassName: "text-muted-foreground",
   },
 } as const;
 
@@ -58,74 +62,71 @@ function StudyPlanPage() {
     enabled: !!planId,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-16" role="status">
-        <span className="sr-only">Cargando plan de estudios...</span>
-        <div
-          className={cn(
-            "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-            "border-muted border-t-primary"
-          )}
-          aria-hidden="true"
-        />
-      </div>
-    );
-  }
-
-  if (isError || !plan) {
-    return (
-      <div className="p-6 max-w-2xl mx-auto">
-        <p className="text-sm text-muted-foreground py-8 text-center">
-          Plan no encontrado o no disponible.
-        </p>
-      </div>
-    );
-  }
-
-  const statusConf = getStatusConfig(plan.status);
+  const statusConf = plan ? getStatusConfig(plan.status) : null;
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <header className="mb-6">
-        {/* Plan name */}
-        <div className="flex items-start justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground font-display leading-tight">
-            {plan.name}
-          </h1>
-          {/* Status: color + icon + label (WCAG AA) */}
-          <span
+      <BackLink to="/catalog/programs" />
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-16" role="status">
+          <span className="sr-only">Cargando plan de estudios...</span>
+          <div
             className={cn(
-              "inline-flex items-center gap-1 text-xs font-medium shrink-0 mt-1",
-              statusConf.className
+              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
+              "border-muted border-t-primary"
             )}
-            aria-label={`Estado: ${statusConf.label}`}
-          >
-            <span aria-hidden="true">{statusConf.icon}</span>
-            {statusConf.label}
-          </span>
+            aria-hidden="true"
+          />
         </div>
+      )}
 
-        {/* Credits */}
-        <p className="text-sm text-muted-foreground mt-2">
-          <span className="font-medium text-foreground">{plan.totalCredits}</span>
-          {" créditos totales"}
-          {plan.referenceYear && ` · Año de referencia: ${plan.referenceYear}`}
+      {(isError || (!isLoading && !plan)) && (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          Plan no encontrado o no disponible.
         </p>
-      </header>
+      )}
 
-      {/* Journeys section */}
-      {plan.applicableJourneys && plan.applicableJourneys.length > 0 && (
-        <section aria-label="Jornadas del plan" className="mb-6">
-          <h2 className="text-sm font-semibold text-foreground mb-2">
-            Jornadas disponibles
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {plan.applicableJourneys.map((journey) => (
-              <JourneyBadge key={journey.code} journey={journey} />
-            ))}
-          </div>
-        </section>
+      {plan && statusConf && (
+        <>
+          <header className="mb-6 mt-2">
+            {/* Plan name */}
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-bold text-foreground font-display leading-tight">
+                {plan.name}
+              </h1>
+              {/* Status: color on icon only; label uses text-foreground for WCAG AA contrast */}
+              <span
+                className="inline-flex items-center gap-1 text-xs font-medium shrink-0 mt-1"
+                aria-label={`Estado: ${statusConf.label}`}
+              >
+                <span aria-hidden="true" className={statusConf.iconClassName}>{statusConf.icon}</span>
+                <span className={statusConf.labelClassName}>{statusConf.label}</span>
+              </span>
+            </div>
+
+            {/* Credits */}
+            <p className="text-sm text-muted-foreground mt-2">
+              <span className="font-medium text-foreground">{plan.totalCredits}</span>
+              {" créditos totales"}
+              {plan.referenceYear && ` · Año de referencia: ${plan.referenceYear}`}
+            </p>
+          </header>
+
+          {/* Journeys section */}
+          {plan.applicableJourneys && plan.applicableJourneys.length > 0 && (
+            <section aria-label="Jornadas del plan" className="mb-6">
+              <h2 className="text-sm font-semibold text-foreground mb-2">
+                Jornadas disponibles
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {plan.applicableJourneys.map((journey) => (
+                  <JourneyBadge key={journey.code} journey={journey} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

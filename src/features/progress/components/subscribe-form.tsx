@@ -27,6 +27,7 @@ import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const catalogApi = createApiInstance(CatalogApi);
@@ -177,7 +178,8 @@ function SubscribeForm() {
 
   return (
     <div className="p-6 max-w-lg mx-auto">
-      <header className="mb-6">
+      <BackLink to="/progress/subscriptions" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Suscribirse a un programa
         </h1>
@@ -191,8 +193,8 @@ function SubscribeForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 border rounded text-sm",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: API error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           {apiError}
@@ -204,8 +206,8 @@ function SubscribeForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 border rounded text-sm",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: load error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           No se pudieron cargar las jornadas. Intentá nuevamente.
@@ -224,7 +226,7 @@ function SubscribeForm() {
             className={cn(
               "border rounded px-3 py-2 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
-              errors.programId && "border-red-500"
+              errors.programId && "border-destructive"
             )}
             {...register("programId")}
             onChange={(e) => {
@@ -241,7 +243,7 @@ function SubscribeForm() {
             ))}
           </select>
           {errors.programId && (
-            <p className="text-xs text-red-600 dark:text-red-400">
+            <p className="text-xs text-destructive">
               {errors.programId.message}
             </p>
           )}
@@ -260,7 +262,7 @@ function SubscribeForm() {
               "border rounded px-3 py-2 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              errors.planId && "border-red-500"
+              errors.planId && "border-destructive"
             )}
             {...register("planId")}
             onChange={(e) => {
@@ -276,7 +278,7 @@ function SubscribeForm() {
             ))}
           </select>
           {errors.planId && (
-            <p className="text-xs text-red-600 dark:text-red-400">
+            <p className="text-xs text-destructive">
               {errors.planId.message}
             </p>
           )}
@@ -295,7 +297,7 @@ function SubscribeForm() {
               "border rounded px-3 py-2 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              errors.referenceJourneyCode && "border-red-500"
+              errors.referenceJourneyCode && "border-destructive"
             )}
             {...register("referenceJourneyCode")}
           >
@@ -307,7 +309,7 @@ function SubscribeForm() {
             ))}
           </select>
           {errors.referenceJourneyCode && (
-            <p className="text-xs text-red-600 dark:text-red-400">
+            <p className="text-xs text-destructive">
               {errors.referenceJourneyCode.message}
             </p>
           )}

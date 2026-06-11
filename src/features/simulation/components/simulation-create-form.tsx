@@ -26,6 +26,7 @@ import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import { useCreateSimulation } from "@/features/simulation/hooks/use-create-simulation";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const offeringsApi = createApiInstance(OfferingsApi);
@@ -105,7 +106,8 @@ function SimulationCreateForm() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/simulations" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Nueva simulación
         </h1>
@@ -119,8 +121,8 @@ function SimulationCreateForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 text-sm border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: API error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           <span aria-hidden="true" className="font-bold mr-1">✕</span>
@@ -158,12 +160,12 @@ function SimulationCreateForm() {
               className={cn(
                 "border rounded px-3 py-2 text-sm bg-background text-foreground",
                 "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.name && "border-red-500"
+                errors.name && "border-destructive"
               )}
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-xs text-red-600">{errors.name.message}</p>
+              <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
           </div>
 
@@ -178,7 +180,7 @@ function SimulationCreateForm() {
               className={cn(
                 "border rounded px-3 py-2 text-sm bg-background text-foreground",
                 "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.periodId && "border-red-500"
+                errors.periodId && "border-destructive"
               )}
               {...register("periodId")}
             >
@@ -190,7 +192,7 @@ function SimulationCreateForm() {
               ))}
             </select>
             {errors.periodId && (
-              <p className="text-xs text-red-600">{errors.periodId.message}</p>
+              <p className="text-xs text-destructive">{errors.periodId.message}</p>
             )}
           </div>
 
@@ -216,7 +218,7 @@ function SimulationCreateForm() {
               ))}
             </div>
             {errors.programIds && (
-              <p className="text-xs text-red-600">{errors.programIds.message}</p>
+              <p className="text-xs text-destructive">{errors.programIds.message}</p>
             )}
           </div>
 

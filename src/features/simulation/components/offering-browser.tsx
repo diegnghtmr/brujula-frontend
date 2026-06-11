@@ -106,8 +106,8 @@ function ScheduleOptionRow({
           role="alert"
           className={cn(
             "mt-2 p-2 text-xs border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: blocking error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           <span aria-hidden="true" className="font-bold mr-1">✕</span>
@@ -128,8 +128,9 @@ function OfferingRow({ simulationId, offering }: OfferingRowProps) {
     enabled: expanded,
   });
 
+  // §6.4/§5.1: content tile → rounded-none
   return (
-    <li className="border rounded bg-card border-border">
+    <li className="border rounded-none bg-card border-border">
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}

@@ -45,7 +45,8 @@ function DisclaimerBanner() {
       aria-live="polite"
       className={cn(
         "w-full px-4 py-3",
-        "bg-warning text-warning-foreground",
+        // §6.13/P1-5: persistent calm notice, not an alert → secondary surface
+        "bg-secondary text-secondary-foreground",
         "border-b border-border",
         "flex items-start justify-between gap-4"
       )}

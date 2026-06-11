@@ -16,14 +16,14 @@ const STATUS_CONFIG = {
   CURRENT: {
     label: "Vigente",
     textIcon: "✓",
-    className:
-      "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    // §2.4: vigente (éxito/aprobada) → success-subtle per §6.3
+    className: "bg-success-subtle text-success-subtle-foreground border-transparent",
   },
   OUTDATED: {
     label: "Desactualizada",
     textIcon: "⚠",
-    className:
-      "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-700",
+    // §2.4: desactualizada/cancelada → warning-subtle per §6.3
+    className: "bg-warning-subtle text-warning-subtle-foreground border-transparent",
   },
 } as const;
 

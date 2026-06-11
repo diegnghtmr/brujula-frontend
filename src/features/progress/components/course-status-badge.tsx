@@ -21,39 +21,58 @@ import { cn } from "@/lib/utils";
 const STATUS_CONFIG = {
   PENDING: {
     label: "Pendiente",
-    textIcon: "⏳",
-    className:
-      "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-600",
+    textIcon: "○",
+    // §6.3: pendiente → muted (neutral, no cursada)
+    className: "bg-muted text-muted-foreground border-transparent",
   },
   PASSED: {
     label: "Aprobada",
     textIcon: "✓",
-    className:
-      "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    // §6.3: aprobada → success-subtle
+    className: "bg-success-subtle text-success-subtle-foreground border-transparent",
   },
   FAILED: {
     label: "Reprobada",
     textIcon: "✕",
-    className:
-      "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
+    // §6.3: reprobada → destructive-subtle
+    className: "bg-destructive-subtle text-destructive-subtle-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelada",
-    textIcon: "∅",
-    className:
-      "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700",
+    textIcon: "—",
+    // §6.3: cancelada → warning-subtle
+    className: "bg-warning-subtle text-warning-subtle-foreground border-transparent",
   },
   AVAILABLE: {
     label: "Disponible",
     textIcon: "🔓",
-    className:
-      "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700",
+    // §6.3: habilitada → outline (border-success, bg-background)
+    className: "border-success bg-background text-success-subtle-foreground",
   },
   BLOCKED: {
     label: "Bloqueada",
     textIcon: "🔒",
-    className:
-      "bg-slate-200 text-slate-700 border-slate-400 dark:bg-slate-700/50 dark:text-slate-300 dark:border-slate-600",
+    // §6.3: bloqueada → muted
+    className: "bg-muted text-muted-foreground border-transparent",
+  },
+  // Additional statuses that may come from the API
+  IN_PROGRESS: {
+    label: "En curso",
+    textIcon: "◷",
+    // §6.3: en-curso → info-subtle
+    className: "bg-info-subtle text-info-subtle-foreground border-transparent",
+  },
+  PLANNED: {
+    label: "Pendiente",
+    textIcon: "○",
+    // §6.3: pendiente → muted
+    className: "bg-muted text-muted-foreground border-transparent",
+  },
+  NOT_TAKEN: {
+    label: "Pendiente",
+    textIcon: "○",
+    // §6.3: pendiente → muted
+    className: "bg-muted text-muted-foreground border-transparent",
   },
 } as const;
 
@@ -95,8 +114,8 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border",
-            "bg-yellow-50 text-yellow-800 border-yellow-300",
-            "dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700"
+            // §2.4: advisory/soft warning → warning-subtle
+            "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
           title={`Prerrequisito(s) recomendado(s): ${unmetRequirements?.join(", ")}`}
         >
@@ -115,8 +134,8 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border",
-            "bg-red-50 text-red-800 border-red-300",
-            "dark:bg-red-900/20 dark:text-red-300 dark:border-red-700"
+            // §2.4: blocking/required missing → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
           aria-label={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
           title={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}

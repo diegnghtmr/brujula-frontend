@@ -238,6 +238,40 @@ describe("ProgramListPage (CAT-001)", () => {
   });
 });
 
+/**
+ * Guard tests — FIX 2: status label text contrast regression.
+ * Ensures the VISIBLE status label does NOT use bare text-success / text-warning
+ * (which fail WCAG AA at 4.35:1 / 3.27:1). The label must use text-foreground
+ * or *-subtle-foreground; the icon span carries the semantic color.
+ */
+describe("ProgramCard — status label contrast guard (FIX 2)", () => {
+  const activeProgram = {
+    id: "prog-contrast",
+    name: "Ingeniería de Sistemas",
+    faculty: "Facultad de Ingeniería",
+    status: "ACTIVE" as const,
+    availableJourneys: [],
+    version: 1,
+  };
+
+  it("ACTIVE status label does not use bare text-success class (fails WCAG AA)", () => {
+    const { container } = render(<ProgramCard program={activeProgram} />);
+    // The status text span wraps icon + label together in statusConf.className
+    // After FIX 2, the outer status span must NOT include text-success on the label text.
+    // Implementation: icon gets text-success, label gets text-foreground or text-success-subtle-foreground.
+    // We verify the visible label element does not carry text-success.
+    const statusSpan = container.querySelector("[aria-label^='Estado:']");
+    expect(statusSpan).not.toBeNull();
+    // The label text "Activo" must be present
+    expect(statusSpan!.textContent).toContain("Activo");
+    // The outer span must not ONLY have text-success (the label must be accessible)
+    // After fix: className will have text-foreground or text-success-subtle-foreground for the label text
+    const outerCls = statusSpan!.className;
+    // bare text-success (without -subtle-foreground suffix) must not be in the text-carrying element
+    expect(outerCls).not.toMatch(/\btext-success\b(?!-)/);
+  });
+});
+
 describe("ProgramCard — keyboard accessibility (WCAG 2.1.1)", () => {
   const program = {
     id: "prog-kbd",

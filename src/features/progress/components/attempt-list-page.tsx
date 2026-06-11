@@ -28,6 +28,7 @@ import { AttemptStatus } from "@/api/generated/models/attempt-status";
 import { useCourseAttempts } from "@/features/progress/hooks/use-course-attempts";
 import { useUpdateCourseAttempt } from "@/features/progress/hooks/use-update-course-attempt";
 import { useDeleteCourseAttempt } from "@/features/progress/hooks/use-delete-course-attempt";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const offeringsApi = createApiInstance(OfferingsApi);
@@ -40,20 +41,20 @@ const ATTEMPT_STATUS_CONFIG = {
   PASSED: {
     label: "Aprobada",
     textIcon: "✓",
-    className:
-      "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700",
+    // §2.4: aprobada → state-aprobada (solid badge per §6.3)
+    className: "bg-state-aprobada text-state-aprobada-foreground border-transparent",
   },
   FAILED: {
     label: "Reprobada",
     textIcon: "✕",
-    className:
-      "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700",
+    // §2.4: reprobada → state-reprobada
+    className: "bg-state-reprobada text-state-reprobada-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelada",
     textIcon: "∅",
-    className:
-      "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700",
+    // §2.4: cancelada → state-cancelada
+    className: "bg-state-cancelada text-state-cancelada-foreground border-transparent",
   },
 } as const;
 
@@ -202,8 +203,8 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            "bg-yellow-50 border-yellow-300 text-yellow-800",
-            "dark:bg-yellow-900/20 dark:border-yellow-700 dark:text-yellow-300"
+            // §2.4: 409 conflict (advertencia recuperable) → warning-subtle
+            "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
         >
           {conflictError}
@@ -215,8 +216,8 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: API error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           {apiError}
@@ -228,8 +229,8 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: load error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           No se pudieron cargar los períodos académicos. Intentá nuevamente.
@@ -255,7 +256,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
             className={cn(
               "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
-              errors.status && "border-red-500"
+              errors.status && "border-destructive"
             )}
             {...register("status")}
             onChange={(e) => {
@@ -269,7 +270,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
             <option value="CANCELLED">Cancelada</option>
           </select>
           {errors.status && (
-            <p className="text-xs text-red-600">{errors.status.message}</p>
+            <p className="text-xs text-destructive">{errors.status.message}</p>
           )}
         </div>
 
@@ -292,12 +293,12 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
               className={cn(
                 "border rounded px-2 py-1.5 text-sm bg-background text-foreground w-24",
                 "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.finalGrade && "border-red-500"
+                errors.finalGrade && "border-destructive"
               )}
               {...register("finalGrade")}
             />
             {errors.finalGrade && (
-              <p className="text-xs text-red-600">{errors.finalGrade.message}</p>
+              <p className="text-xs text-destructive">{errors.finalGrade.message}</p>
             )}
           </div>
         )}
@@ -318,7 +319,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
               "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
               "disabled:opacity-50 disabled:cursor-not-allowed",
-              errors.periodId && "border-red-500"
+              errors.periodId && "border-destructive"
             )}
             {...register("periodId")}
           >
@@ -342,7 +343,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
             ))}
           </select>
           {errors.periodId && (
-            <p className="text-xs text-red-600">{errors.periodId.message}</p>
+            <p className="text-xs text-destructive">{errors.periodId.message}</p>
           )}
         </div>
 
@@ -399,7 +400,8 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
   return (
     <li
       className={cn(
-        "p-4 border rounded bg-card border-border",
+        // §6.4/§5.1: content tile → rounded-none
+        "p-4 border rounded-none bg-card border-border",
         "flex flex-col gap-2"
       )}
     >
@@ -415,7 +417,8 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
             </span>
             <AttemptStatusBadge status={attempt.status} />
             {attempt.finalGrade != null && (
-              <span className="text-xs text-foreground font-medium">
+              // §3.1/§9: tabular-nums for grade values
+              <span className="text-xs text-foreground font-medium tabular-nums">
                 {attempt.finalGrade.toFixed(1)}
               </span>
             )}
@@ -442,8 +445,8 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
               onClick={() => setConfirmDelete(true)}
               className={cn(
                 "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
-                "border-red-300 text-red-700 hover:bg-red-50",
-                "dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                // §6.1/§2.3: destructive action outline style
+                "border-destructive text-destructive hover:bg-destructive-subtle"
               )}
             >
               Eliminar
@@ -457,10 +460,11 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
         <div
           className={cn(
             "flex items-center gap-3 p-2 border rounded",
-            "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800"
+            // §2.3: destructive-subtle for the confirmation container
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
-          <span className="text-xs text-red-800 dark:text-red-300 flex-1">
+          <span className="text-xs flex-1">
             ¿Confirmás la eliminación de este intento? Esta acción no se puede deshacer.
           </span>
           <button
@@ -470,7 +474,8 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
             disabled={deleteMutation.isPending}
             className={cn(
               "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
-              "bg-red-600 text-white border-red-600 hover:bg-red-700",
+              // §6.1/§2.3: destructive solid button for confirm action
+              "bg-destructive text-destructive-foreground border-transparent hover:opacity-90",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
@@ -520,7 +525,8 @@ function AttemptListPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/progress/subscriptions" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Historial de intentos
         </h1>

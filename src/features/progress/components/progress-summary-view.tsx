@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { ProgressApi } from "@/api/generated/api/progress-api";
 import { createApiInstance } from "@/api/client";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const progressApi = createApiInstance(ProgressApi);
@@ -40,7 +41,8 @@ function ProgressSummaryView() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/progress/subscriptions" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Resumen de avance
         </h1>
@@ -75,14 +77,16 @@ function ProgressSummaryView() {
             aria-label="Resumen de créditos"
             className={cn(
               "grid grid-cols-2 sm:grid-cols-3 gap-4 p-4",
-              "border rounded bg-card border-border"
+              // §6.4/§5.1: content tile → rounded-none
+                "border rounded-none bg-card border-border"
             )}
           >
             <div className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                 Créditos aprobados
               </span>
-              <span className="text-2xl font-bold text-foreground">
+              {/* §3.1/§9: tabular-nums for credit values */}
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {summary.approvedCredits}
               </span>
               <span className="text-xs text-muted-foreground">
@@ -94,7 +98,7 @@ function ProgressSummaryView() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                 Créditos pendientes
               </span>
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {summary.pendingCredits}
               </span>
             </div>
@@ -103,7 +107,7 @@ function ProgressSummaryView() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                 Avance estimado
               </span>
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {summary.progressPercentage.toFixed(1)}%
               </span>
             </div>
@@ -126,13 +130,13 @@ function ProgressSummaryView() {
             aria-label="Conteo de materias"
             className="grid grid-cols-2 gap-4"
           >
-            <div className={cn("p-3 border rounded bg-card border-border")}>
+            <div className={cn("p-3 border rounded-none bg-card border-border")}>
               <span className="text-xs text-muted-foreground">Materias aprobadas</span>
               <p className="text-xl font-bold text-foreground mt-0.5">
                 {summary.passedCourses}
               </p>
             </div>
-            <div className={cn("p-3 border rounded bg-card border-border")}>
+            <div className={cn("p-3 border rounded-none bg-card border-border")}>
               <span className="text-xs text-muted-foreground">Materias por recuperar</span>
               <p className="text-xl font-bold text-foreground mt-0.5">
                 {summary.pendingFailedCourses}
@@ -143,12 +147,13 @@ function ProgressSummaryView() {
           {/* Average */}
           <section
             aria-label="Promedio histórico estimado"
-            className={cn("p-4 border rounded bg-card border-border")}
+            className={cn("p-4 border rounded-none bg-card border-border")}
           >
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Promedio histórico estimado
             </h2>
-            <p className="text-2xl font-bold text-foreground">
+            {/* §3.1/§9: tabular-nums for average values */}
+            <p className="text-2xl font-bold text-foreground tabular-nums">
               {summary.estimatedHistoricalAverage != null
                 ? summary.estimatedHistoricalAverage.toFixed(2)
                 : "—"}
@@ -169,7 +174,7 @@ function ProgressSummaryView() {
                       <span className="text-muted-foreground truncate">
                         {pa.periodName ?? pa.periodId}
                       </span>
-                      <span className="font-medium text-foreground ml-4 shrink-0">
+                      <span className="font-medium text-foreground ml-4 shrink-0 tabular-nums">
                         {pa.estimatedAverage.toFixed(2)}
                       </span>
                     </li>
@@ -184,8 +189,8 @@ function ProgressSummaryView() {
             aria-label="Aviso de datos autodeclarados"
             className={cn(
               "p-3 border rounded text-xs",
-              "bg-yellow-50 border-yellow-200 text-yellow-900",
-              "dark:bg-yellow-900/10 dark:border-yellow-800 dark:text-yellow-300"
+              // §6.13/P1-5: persistent calm notice → warning-subtle (not assertive alert color)
+              "bg-warning-subtle text-warning-subtle-foreground border-transparent"
             )}
           >
             <p>{summary.disclaimer}</p>

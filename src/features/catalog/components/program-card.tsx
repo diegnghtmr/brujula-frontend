@@ -15,19 +15,21 @@ const PROGRAM_STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    // text-green-800 (#166534) gives ~5.4:1 against near-white (#fcfcfc) — WCAG AA ✓
-    // (text-green-600 was #00a63e at 3.13:1 — insufficient)
-    className: "text-green-800 dark:text-green-400",
+    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    iconClassName: "text-success",
+    labelClassName: "text-foreground",
   },
   INACTIVE: {
     label: "Inactivo",
     icon: "○",
-    className: "text-muted-foreground",
+    iconClassName: "text-muted-foreground",
+    labelClassName: "text-muted-foreground",
   },
   ARCHIVED: {
     label: "Archivado",
     icon: "◌",
-    className: "text-muted-foreground",
+    iconClassName: "text-muted-foreground",
+    labelClassName: "text-muted-foreground",
   },
 } as const;
 
@@ -53,16 +55,13 @@ function ProgramCardContent({ program, statusConf }: { program: Program; statusC
         <h3 className="text-base font-semibold text-foreground leading-snug">
           {program.name}
         </h3>
-        {/* Status: color + icon + label (WCAG 2.2 AA — never color alone) */}
+        {/* Status: color on icon only; label uses text-foreground for WCAG AA contrast */}
         <span
-          className={cn(
-            "inline-flex items-center gap-1 text-xs font-medium shrink-0",
-            statusConf.className
-          )}
+          className="inline-flex items-center gap-1 text-xs font-medium shrink-0"
           aria-label={`Estado: ${statusConf.label}`}
         >
-          <span aria-hidden="true">{statusConf.icon}</span>
-          {statusConf.label}
+          <span aria-hidden="true" className={statusConf.iconClassName}>{statusConf.icon}</span>
+          <span className={statusConf.labelClassName}>{statusConf.label}</span>
         </span>
       </div>
       <p className="text-sm text-muted-foreground">{program.faculty}</p>

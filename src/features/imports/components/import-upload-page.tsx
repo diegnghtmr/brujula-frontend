@@ -22,6 +22,7 @@ import { ImportsApi } from "@/api/generated/api/imports-api";
 import { ImportKind } from "@/api/generated/models/import-kind";
 import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const catalogApi = createApiInstance(CatalogApi);
@@ -122,7 +123,8 @@ function ImportUploadPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/dashboard" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Importar datos académicos
         </h1>
@@ -136,8 +138,8 @@ function ImportUploadPage() {
           role="alert"
           className={cn(
             "mb-4 p-3 text-sm border rounded",
-            "bg-red-50 border-red-300 text-red-800",
-            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+            // §2.4: API error → destructive-subtle
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
           <span aria-hidden="true" className="font-bold mr-1">✕</span>
@@ -163,7 +165,7 @@ function ImportUploadPage() {
             className={cn(
               "border rounded px-3 py-2 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
-              errors.kind && "border-red-500"
+              errors.kind && "border-destructive"
             )}
             {...register("kind")}
           >
@@ -175,7 +177,7 @@ function ImportUploadPage() {
             ))}
           </select>
           {errors.kind && (
-            <p id="import-kind-error" className="text-xs text-red-600" role="alert">
+            <p id="import-kind-error" className="text-xs text-destructive" role="alert">
               {errors.kind.message}
             </p>
           )}
@@ -199,7 +201,7 @@ function ImportUploadPage() {
               className={cn(
                 "border rounded px-3 py-2 text-sm bg-background text-foreground",
                 "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.programId && "border-red-500"
+                errors.programId && "border-destructive"
               )}
               {...register("programId")}
             >
@@ -212,7 +214,7 @@ function ImportUploadPage() {
             </select>
           )}
           {errors.programId && (
-            <p id="import-program-error" className="text-xs text-red-600" role="alert">
+            <p id="import-program-error" className="text-xs text-destructive" role="alert">
               {errors.programId.message}
             </p>
           )}
@@ -241,13 +243,13 @@ function ImportUploadPage() {
                   "file:mr-3 file:py-1 file:px-2 file:rounded file:border-0",
                   "file:text-xs file:font-medium file:bg-primary file:text-primary-foreground",
                   "hover:file:opacity-90",
-                  errors.file && "border-red-500"
+                  errors.file && "border-destructive"
                 )}
               />
             )}
           />
           {errors.file && (
-            <p id="import-file-error" className="text-xs text-red-600" role="alert">
+            <p id="import-file-error" className="text-xs text-destructive" role="alert">
               {errors.file.message}
             </p>
           )}

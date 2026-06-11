@@ -15,7 +15,8 @@ function JourneyBadge({ journey }: JourneyBadgeProps) {
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded-full",
-        "text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+        // FIX 3: bg-primary/10 is ~10% black = invisible. Use muted/border tokens for visible weight.
+        "text-xs font-medium bg-muted text-foreground border border-border"
       )}
       aria-label={`Jornada: ${journey.name}`}
     >

@@ -26,7 +26,8 @@ function CourseCard({ course }: CourseCardProps) {
   return (
     <article
       className={cn(
-        "flex flex-col gap-1.5 p-2.5 border border-border bg-card rounded",
+        // §6.4/§5.1: content cards use rounded-none (flat)
+        "flex flex-col gap-1.5 p-2.5 border border-border bg-card rounded-none",
         "text-xs min-w-[120px]"
       )}
       aria-label={`Materia: ${course.name}`}
@@ -36,8 +37,8 @@ function CourseCard({ course }: CourseCardProps) {
       </p>
 
       <div className="flex items-center gap-1.5 text-muted-foreground">
-        {/* Credits */}
-        <span className="shrink-0">
+        {/* Credits — §3.1/§9: tabular-nums for numeric values */}
+        <span className="shrink-0 tabular-nums">
           {course.credits} cr
         </span>
         <span aria-hidden="true">·</span>

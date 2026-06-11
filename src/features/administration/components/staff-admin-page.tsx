@@ -21,6 +21,7 @@ import { createApiInstance } from "@/api/client";
 import { RequireRole } from "@/features/auth/components/require-role";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 import type { Staff } from "@/api/generated/models/staff";
 
@@ -45,12 +46,15 @@ const STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    className: "text-success",
+    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    iconClassName: "text-success",
+    labelClassName: "text-foreground",
   },
   INACTIVE: {
     label: "Inactivo",
     icon: "○",
-    className: "text-muted-foreground",
+    iconClassName: "text-muted-foreground",
+    labelClassName: "text-muted-foreground",
   },
 } as const;
 
@@ -140,7 +144,8 @@ function StaffAdminContent() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/dashboard" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Gestión de staff
         </h1>
@@ -299,16 +304,13 @@ function StaffAdminContent() {
                       {staff.email}
                     </td>
                     <td className="py-2 px-3">
-                      {/* Academic state: color + icon + label (WCAG AA — not color alone) */}
+                      {/* Status: color on icon only; label uses text-foreground for WCAG AA contrast */}
                       <span
-                        className={cn(
-                          "inline-flex items-center gap-1 text-xs font-medium",
-                          statusConf.className
-                        )}
+                        className="inline-flex items-center gap-1 text-xs font-medium"
                         aria-label={`Estado: ${statusConf.label}`}
                       >
-                        <span aria-hidden="true">{statusConf.icon}</span>
-                        {statusConf.label}
+                        <span aria-hidden="true" className={statusConf.iconClassName}>{statusConf.icon}</span>
+                        <span className={statusConf.labelClassName}>{statusConf.label}</span>
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right">
