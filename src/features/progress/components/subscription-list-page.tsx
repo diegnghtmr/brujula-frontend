@@ -8,15 +8,202 @@
  * - Each subscription card links to curriculum view + progress summary.
  * - Quick action: "Declarar avance" → /progress/subscriptions/{id}/declare
  * - Quick action: "Ver resumen" → /progress/subscriptions/{id}/progress
+ * - Quick action: "Dar de baja" → DELETE /me/subscriptions/{id} (WU-1 Fix B)
+ *   Requires inline confirmation step before deleting (mirrors AttemptListPage pattern).
  */
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router";
 import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
+import type { AxiosError } from "@/api/client";
+import type { Subscription } from "@/api/generated/models/subscription";
+import { useDeleteSubscription } from "@/features/progress/hooks/use-delete-subscription";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
+
+// ---------------------------------------------------------------------------
+// Subscription card — with inline delete confirmation (mirrors AttemptRow)
+// ---------------------------------------------------------------------------
+
+interface SubscriptionCardProps {
+  sub: Subscription;
+}
+
+function SubscriptionCard({ sub }: SubscriptionCardProps) {
+  const navigate = useNavigate();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteMutation = useDeleteSubscription();
+
+  function handleDelete() {
+    setDeleteError(null);
+    deleteMutation.mutate(
+      { subscriptionId: sub.id },
+      {
+        onSuccess: () => {
+          setConfirmDelete(false);
+        },
+        onError: (error: unknown) => {
+          const axiosError = error as AxiosError;
+          const detail = (
+            axiosError.response?.data as { detail?: string } | undefined
+          )?.detail;
+          setDeleteError(
+            detail ?? "No se pudo dar de baja la suscripción. Intentá nuevamente."
+          );
+          setConfirmDelete(false);
+        },
+      }
+    );
+  }
+
+  return (
+    <li
+      className={cn(
+        // §6.4/§5.1: content tile → rounded-none
+        "p-5 border rounded-none bg-card border-border",
+        "flex flex-col gap-3"
+      )}
+    >
+      <div className="flex flex-col gap-1">
+        <h2 className="text-base font-semibold text-foreground">
+          {sub.programName}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {sub.planName}{sub.referenceJourney ? ` · ${sub.referenceJourney.name}` : ""}
+        </p>
+      </div>
+
+      {/* Error alert from failed delete */}
+      {deleteError && (
+        <div
+          role="alert"
+          className={cn(
+            "p-2 text-xs border rounded",
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
+          )}
+        >
+          {deleteError}
+        </div>
+      )}
+
+      {/* Action buttons row */}
+      {!confirmDelete && (
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/progress/subscriptions/${sub.id}/declare`)
+            }
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+              "border-primary text-primary hover:bg-accent"
+            )}
+          >
+            Declarar avance
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/progress/subscriptions/${sub.id}/progress`)
+            }
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+              "border-border hover:bg-muted/40"
+            )}
+          >
+            Ver resumen
+          </button>
+          {sub.referenceJourney && (
+            <Link
+              to={`/curriculum/plans/${sub.planId}/malla?journeyCode=${encodeURIComponent(sub.referenceJourney.code)}`}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+                "border-border hover:bg-muted/40"
+              )}
+            >
+              Ver malla
+            </Link>
+          )}
+          <Link
+            to={`/progress/subscriptions/${sub.id}/attempts`}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+              "border-border hover:bg-muted/40"
+            )}
+          >
+            Ver historial
+          </Link>
+
+          {/* Destructive action — outline style, not heavy fill (§6.1/§2.3) */}
+          <button
+            type="button"
+            aria-label={`Dar de baja suscripción a ${sub.programName}`}
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              setDeleteError(null);
+              setConfirmDelete(true);
+            }}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+              "border-destructive text-destructive hover:bg-destructive-subtle",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            Dar de baja
+          </button>
+        </div>
+      )}
+
+      {/* Inline delete confirmation — mirrors AttemptListPage pattern */}
+      {confirmDelete && (
+        <div
+          className={cn(
+            "flex items-center gap-3 p-2 border rounded",
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
+          )}
+        >
+          <span className="text-xs flex-1">
+            ¿Confirmás que querés dar de baja esta suscripción? Se perderá el acceso a la planificación de este programa.
+          </span>
+          <button
+            type="button"
+            aria-label="Confirmar dar de baja"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className={cn(
+              "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
+              "bg-destructive text-destructive-foreground border-transparent hover:opacity-90",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            {deleteMutation.isPending ? "Procesando..." : "Confirmar"}
+          </button>
+          <button
+            type="button"
+            aria-label="Cancelar dar de baja"
+            onClick={() => setConfirmDelete(false)}
+            className={cn(
+              "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
+              "border-border hover:bg-muted/40"
+            )}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SubscriptionListPage
+// ---------------------------------------------------------------------------
 
 function SubscriptionListPage() {
   const navigate = useNavigate();
@@ -33,7 +220,8 @@ function SubscriptionListPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <header className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+      <BackLink to="/dashboard" />
+      <header className="flex items-start justify-between gap-4 mb-4 mt-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground font-display">
             Mis suscripciones
@@ -86,7 +274,7 @@ function SubscriptionListPage() {
             onClick={() => navigate("/progress/subscribe")}
             className={cn(
               "mt-4 px-4 py-2 text-sm font-medium rounded border transition-colors",
-              "border-primary text-primary hover:bg-primary/10"
+              "border-primary text-primary hover:bg-accent"
             )}
           >
             Suscribirse a un programa
@@ -97,69 +285,7 @@ function SubscriptionListPage() {
       {subscriptions && subscriptions.length > 0 && (
         <ul className="flex flex-col gap-4">
           {subscriptions.map((sub) => (
-            <li
-              key={sub.id}
-              className={cn(
-                "p-5 border rounded bg-card border-border",
-                "flex flex-col gap-3"
-              )}
-            >
-              <div className="flex flex-col gap-1">
-                <h2 className="text-base font-semibold text-foreground">
-                  {sub.programName}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {sub.planName}{sub.referenceJourney ? ` · ${sub.referenceJourney.name}` : ""}
-                </p>
-              </div>
-
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(`/progress/subscriptions/${sub.id}/declare`)
-                  }
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                    "border-primary text-primary hover:bg-primary/10"
-                  )}
-                >
-                  Declarar avance
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(`/progress/subscriptions/${sub.id}/progress`)
-                  }
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                    "border-border hover:bg-muted/40"
-                  )}
-                >
-                  Ver resumen
-                </button>
-                {sub.referenceJourney && (
-                  <Link
-                    to={`/curriculum/plans/${sub.planId}/malla?journeyCode=${encodeURIComponent(sub.referenceJourney.code)}`}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                      "border-border hover:bg-muted/40"
-                    )}
-                  >
-                    Ver malla
-                  </Link>
-                )}
-                <Link
-                  to={`/progress/subscriptions/${sub.id}/attempts`}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                    "border-border hover:bg-muted/40"
-                  )}
-                >
-                  Ver historial
-                </Link>
-              </div>
-            </li>
+            <SubscriptionCard key={sub.id} sub={sub} />
           ))}
         </ul>
       )}
