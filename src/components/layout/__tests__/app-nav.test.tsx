@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { createElement, type ReactNode } from "react";
 import { AppNav } from "@/components/layout/app-nav";
@@ -134,7 +135,9 @@ describe("AppNav", () => {
     expect(inicioLink).not.toHaveAttribute("aria-current", "page");
   });
 
-  it("nav links include focus-visible ring class", () => {
+  it("nav link shows visible focus ring (ring-2 class) when keyboard-focused via Tab", async () => {
+    const user = userEvent.setup();
+
     render(
       <Routes>
         <Route path="/dashboard" element={<AppNav />} />
@@ -142,10 +145,16 @@ describe("AppNav", () => {
       { wrapper: createWrapper("/dashboard") }
     );
 
-    const links = screen.getAllByRole("link");
-    // At least all links should have the focus-visible class token
-    for (const link of links) {
-      expect(link.className).toMatch(/focus-visible/);
-    }
+    // Tab into the nav — the first link should receive focus
+    await user.tab();
+
+    const focusedElement = document.activeElement;
+    expect(focusedElement).not.toBeNull();
+    expect(focusedElement?.tagName.toLowerCase()).toBe("a");
+
+    // The focused link must carry the ring-2 token so the focus ring is visible.
+    // This catches the regression where focus-visible:outline-none stays but
+    // focus-visible:ring-2 is removed — that would leave users with no indicator.
+    expect(focusedElement?.className).toMatch(/ring-2/);
   });
 });

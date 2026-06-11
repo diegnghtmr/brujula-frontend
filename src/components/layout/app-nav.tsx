@@ -26,6 +26,7 @@ function AppNav() {
           <li key={to}>
             <NavLink
               to={to}
+              end={to === "/dashboard"}
               className={({ isActive }) =>
                 cn(
                   "px-3 py-1.5 text-sm font-medium rounded transition-colors",

@@ -229,4 +229,26 @@ describe("DashboardPage — pivot hub", () => {
       screen.getByRole("link", { name: /explorar catálogo/i })
     ).toBeInTheDocument();
   });
+
+  it("renders an error message when the subscriptions query returns 500", async () => {
+    server.use(
+      http.get("/api/v1/me", () => HttpResponse.json(ME_FIXTURE)),
+      http.get("/api/v1/me/subscriptions", () =>
+        HttpResponse.json({ title: "Internal Server Error", status: 500 }, { status: 500 })
+      )
+    );
+
+    render(
+      <Routes>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/no se pudieron cargar las suscripciones/i)
+      ).toBeInTheDocument();
+    });
+  });
 });
