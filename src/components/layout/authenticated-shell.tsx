@@ -16,8 +16,6 @@ import { DisclaimerBanner } from "@/features/auth/components/disclaimer-banner";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AppNav } from "@/components/layout/app-nav";
-import { AppFooter } from "@/components/layout/app-footer";
-import { UtilityBar } from "@/components/layout/utility-bar";
 import { cn } from "@/lib/utils";
 
 interface AuthenticatedShellProps {
@@ -40,9 +38,6 @@ function AuthenticatedShell({ children }: AuthenticatedShellProps) {
       >
         Ir al contenido principal
       </a>
-
-      {/* Utility strip — authenticated context, never collapses (DESIGN §6.12) */}
-      <UtilityBar />
 
       {/* Mandatory disclaimer banner — always visible per session (DESIGN §6.13) */}
       <DisclaimerBanner />
@@ -67,9 +62,6 @@ function AuthenticatedShell({ children }: AuthenticatedShellProps) {
 
       {/* Page content — #main-content target for skip link */}
       <main id="main-content" className="flex-1">{children}</main>
-
-      {/* Four-column footer (DESIGN §6.14) */}
-      <AppFooter />
     </div>
   );
 }
