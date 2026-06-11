@@ -77,6 +77,35 @@ describe("SubscriptionListPage — Ver malla link (Slice B)", () => {
     );
   });
 
+  it("B.3.6c: 'Ver malla' href encodes URL-special chars in journeyCode (encodeURIComponent is not a no-op)", async () => {
+    // A journey code with a space would be broken as a raw query param — prove encoding works.
+    const subWithSpecialChar = {
+      ...SUB_WITH_JOURNEY,
+      id: "sub-special",
+      referenceJourney: { code: "JORNADA NOCTURNA", name: "Jornada Nocturna" },
+    };
+
+    server.use(
+      http.get("/api/v1/me/subscriptions", () =>
+        HttpResponse.json([subWithSpecialChar])
+      )
+    );
+
+    render(
+      <Routes>
+        <Route path="/progress/subscriptions" element={<SubscriptionListPage />} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    const mallaLink = await screen.findByRole("link", { name: /ver malla/i });
+    // encodeURIComponent("JORNADA NOCTURNA") === "JORNADA%20NOCTURNA"
+    expect(mallaLink).toHaveAttribute(
+      "href",
+      `/curriculum/plans/${subWithSpecialChar.planId}/malla?journeyCode=JORNADA%20NOCTURNA`
+    );
+  });
+
   it("B.3.6b: no 'Ver malla' link when referenceJourney is null", async () => {
     server.use(
       http.get("/api/v1/me/subscriptions", () =>

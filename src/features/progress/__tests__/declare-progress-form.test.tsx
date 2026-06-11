@@ -119,13 +119,24 @@ function createWrapper(initialPath = `/progress/subscriptions/${SUBSCRIPTION_ID}
 // ---------------------------------------------------------------------------
 
 describe("DeclareProgressForm — Period picker (Slice B)", () => {
-  it("B.3.1: renders combobox populated from GET /periods; submit disabled while loading; selectOptions enables submit", async () => {
+  it("B.3.1: submit disabled + loading indicator present while periods load; selectOptions enables submit after resolve", async () => {
+    // Use a promise gate so the MSW handler blocks until we have asserted the loading state.
+    // This test MUST fail if `periodsLoading` is removed from the `submitDisabled` expression.
+    let releasePeriods!: () => void;
+    const periodsGate = new Promise<void>((resolve) => {
+      releasePeriods = resolve;
+    });
+
     server.use(
       http.get(
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
       ),
-      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+      http.get("/api/v1/periods", async () => {
+        // Block until the test explicitly releases the gate
+        await periodsGate;
+        return HttpResponse.json(PERIODS_FIXTURE);
+      })
     );
 
     const user = userEvent.setup();
@@ -145,20 +156,29 @@ describe("DeclareProgressForm — Period picker (Slice B)", () => {
     const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
-    // Period field must be a combobox (select element), not a textbox
-    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    expect(periodSelect).toBeInTheDocument();
+    // --- LOADING STATE ASSERTIONS (gate not yet released — periods still in-flight) ---
+    // (1) Submit must be disabled while periods are loading
+    const submitBtn = await screen.findByRole("button", { name: /guardar intento/i });
+    expect(submitBtn).toBeDisabled();
 
-    // Two periods from fixture must be present as options
-    expect(screen.getByRole("option", { name: "2025-1" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "2025-2" })).toBeInTheDocument();
+    // (2) Loading indicator option must be present ("Cargando períodos...")
+    expect(screen.getByText(/cargando períodos/i)).toBeInTheDocument();
 
-    // Select a period
+    // --- RESOLVED STATE: release the gate → handler returns PERIODS_FIXTURE ---
+    releasePeriods();
+
+    // Two periods from fixture must appear as options after resolution
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "2025-1" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "2025-2" })).toBeInTheDocument();
+    });
+
+    // Select a period → submit must become enabled
+    const periodSelect = screen.getByRole("combobox", { name: /período/i });
     await user.selectOptions(periodSelect, "period-p1");
-
-    // Submit button must become enabled after a period is chosen
-    const submitBtn = screen.getByRole("button", { name: /guardar intento/i });
-    expect(submitBtn).not.toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /guardar intento/i })).not.toBeDisabled();
+    });
   });
 
   it("B.3.2: empty periods list → disabled select + 'No hay períodos disponibles'; submit disabled", async () => {
@@ -331,6 +351,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         subscriptionId: SUBSCRIPTION_ID,
         courseId: "c-1",
         status: "PASSED",
+        periodId: "period-p1",
       });
     });
   });
@@ -482,7 +503,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
     await waitFor(() => {
-      expect(capturedBody).toMatchObject({ journeyCode: "NOCTURNA" });
+      expect(capturedBody).toMatchObject({ journeyCode: "NOCTURNA", periodId: "period-p2" });
     });
   });
 
@@ -541,6 +562,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         courseId: "c-1",
         status: "PASSED",
         journeyCode: "DIURNA",
+        periodId: "period-p1",
       });
     });
   });
