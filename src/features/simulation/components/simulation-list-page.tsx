@@ -9,6 +9,7 @@
 
 import { useNavigate } from "react-router";
 import { useSimulations } from "@/features/simulation/hooks/use-simulations";
+import { BackLink } from "@/components/layout/back-link";
 import { SimulationStatusBadge } from "./simulation-status-badge";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,8 @@ function SimulationListPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <header className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+      <BackLink to="/dashboard" />
+      <header className="flex items-start justify-between gap-4 mb-6 mt-2 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground font-display">
             Mis simulaciones
@@ -77,7 +79,7 @@ function SimulationListPage() {
             onClick={() => navigate("/simulations/new")}
             className={cn(
               "mt-4 px-4 py-2 text-sm font-medium rounded border transition-colors",
-              "border-primary text-primary hover:bg-primary/10"
+              "border-primary text-primary hover:bg-accent"
             )}
           >
             Crear primera simulación
@@ -91,7 +93,8 @@ function SimulationListPage() {
             <li
               key={sim.id}
               className={cn(
-                "p-4 border rounded bg-card border-border",
+                // §6.4/§5.1: content tile → rounded-none
+                "p-4 border rounded-none bg-card border-border",
                 "flex items-start justify-between gap-3 flex-wrap"
               )}
             >
@@ -111,7 +114,7 @@ function SimulationListPage() {
                 aria-label={`Ver simulación ${sim.name}`}
                 className={cn(
                   "shrink-0 px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                  "border-primary text-primary hover:bg-primary/10"
+                  "border-primary text-primary hover:bg-accent"
                 )}
               >
                 Ver detalle

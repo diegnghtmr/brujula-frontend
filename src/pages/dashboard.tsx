@@ -78,7 +78,7 @@ function DashboardPage() {
               to="/catalog/programs"
               className={cn(
                 "px-4 py-2 text-sm font-medium rounded border text-center transition-colors",
-                "border-primary text-primary hover:bg-primary/10"
+                "border-primary text-primary hover:bg-accent"
               )}
             >
               Explorar Catálogo
@@ -121,7 +121,7 @@ function DashboardPage() {
               to="/progress/subscribe"
               className={cn(
                 "inline-block px-4 py-2 text-sm font-medium rounded border transition-colors",
-                "border-primary text-primary hover:bg-primary/10"
+                "border-primary text-primary hover:bg-accent"
               )}
             >
               Suscribirse
@@ -153,7 +153,7 @@ function DashboardPage() {
                     to={`/progress/subscriptions/${sub.id}/declare`}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-                      "border-primary text-primary hover:bg-primary/10"
+                      "border-primary text-primary hover:bg-accent"
                     )}
                   >
                     Declarar avance

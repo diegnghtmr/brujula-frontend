@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
 import type { Program } from "@/api/generated/models/program";
+import { BackLink } from "@/components/layout/back-link";
 import { ProgramCard } from "./program-card";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,8 @@ function ProgramListPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/dashboard" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Catálogo de programas académicos
         </h1>

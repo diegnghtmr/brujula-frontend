@@ -21,6 +21,7 @@ import { createApiInstance } from "@/api/client";
 import { RequireRole } from "@/features/auth/components/require-role";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
 import type { AllowedEmailDomain } from "@/api/generated/models/allowed-email-domain";
 
@@ -107,7 +108,8 @@ function AllowedDomainsContent() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <header className="mb-6">
+      <BackLink to="/dashboard" />
+      <header className="mb-6 mt-2">
         <h1 className="text-2xl font-bold text-foreground font-display">
           Dominios de correo habilitados
         </h1>

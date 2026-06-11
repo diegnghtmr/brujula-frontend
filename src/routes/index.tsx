@@ -26,7 +26,7 @@
  * so AppRoutes is exported separately for testability).
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router";
 import { DashboardPage } from "@/pages/dashboard";
 import { LoginPage } from "@/features/auth/components/login-page";
 import { RequireAuth } from "@/features/auth/components/require-auth";
@@ -66,9 +66,9 @@ function ForbiddenPage() {
         <p className="text-sm text-muted-foreground">
           No tenés permiso para acceder a esta sección.
         </p>
-        <a href="/dashboard" className="text-sm text-primary underline">
+        <Link to="/dashboard" className="text-sm text-primary underline">
           Volver al inicio
-        </a>
+        </Link>
       </div>
     </main>
   );

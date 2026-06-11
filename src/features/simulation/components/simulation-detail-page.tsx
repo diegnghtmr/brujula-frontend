@@ -12,10 +12,11 @@
  * - Selections list with remove
  */
 
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSimulationDetail } from "@/features/simulation/hooks/use-simulation-detail";
 import { useRemoveSelection } from "@/features/simulation/hooks/use-remove-selection";
+import { BackLink } from "@/components/layout/back-link";
 import { SimulationStatusBadge } from "./simulation-status-badge";
 import { OutdatedBanner } from "./outdated-banner";
 import { WeeklyScheduleGrid } from "./weekly-schedule-grid";
@@ -42,7 +43,6 @@ interface SimulationDetailExtended extends Simulation {
 
 function SimulationDetailPage() {
   const { simulationId } = useParams<{ simulationId: string }>();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const {
@@ -91,29 +91,21 @@ function SimulationDetailPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold text-foreground font-display">
-              {detail.name}
-            </h1>
-            <SimulationStatusBadge status={detail.status} />
+      <header className="mb-6">
+        <BackLink to="/simulations" />
+        <div className="mt-2 flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-foreground font-display">
+                {detail.name}
+              </h1>
+              <SimulationStatusBadge status={detail.status} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {detail.periodName}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {detail.periodName}
-          </p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => navigate("/simulations")}
-          className={cn(
-            "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-            "border-border hover:bg-muted/40"
-          )}
-        >
-          ← Mis simulaciones
-        </button>
       </header>
 
       {/* OUTDATED banner — FE-007 */}

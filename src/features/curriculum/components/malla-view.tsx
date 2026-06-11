@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CurriculumApi } from "@/api/generated/api/curriculum-api";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
+import { BackLink } from "@/components/layout/back-link";
 import { SemesterColumn } from "./semester-column";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,8 @@ function MallaView() {
 
   return (
     <div className="p-6 flex flex-col gap-6">
+      {/* BackLink — navigate(-1) because malla can be reached from multiple parents */}
+      <BackLink />
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>

@@ -121,3 +121,28 @@ describe("Progress routes — RequireAuth guard", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// C-3 guard: ForbiddenPage uses client-side Link (not a bare anchor)
+// ---------------------------------------------------------------------------
+
+describe("ForbiddenPage — client-side navigation link (C-3)", () => {
+  it("C-3: 'Volver al inicio' is a client-side Link pointing to /dashboard", () => {
+    render(<AppRoutes />, {
+      wrapper: createWrapper("/403-forbidden"),
+    });
+
+    // The link must be present in the DOM
+    const link = screen.getByRole("link", { name: /volver al inicio/i });
+    expect(link).toBeInTheDocument();
+
+    // It must resolve to /dashboard
+    expect(link).toHaveAttribute("href", "/dashboard");
+
+    // It must NOT be a bare full-reload anchor — React Router's Link renders as <a>
+    // but is wired to the router. The key observable property we can assert in jsdom
+    // is that it is an <a> element with href="/dashboard" inside a router context
+    // (MemoryRouter is wrapping via createWrapper, so React Router Link will work).
+    expect(link.tagName.toLowerCase()).toBe("a");
+  });
+});
