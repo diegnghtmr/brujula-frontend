@@ -83,6 +83,53 @@ describe("CourseStatusBadge (CROSS-5-RENDER)", () => {
     expect(screen.getByText("Bloqueada")).toBeInTheDocument();
     expect(screen.queryByText("[Recomendado]")).not.toBeInTheDocument();
   });
+
+  it("shows blocking reason chip with unmet prerequisites when status is BLOCKED", () => {
+    render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Blocked}
+        unmetRequirements={["Álgebra Lineal", "Cálculo Diferencial"]}
+      />
+    );
+    // Primary badge still shows
+    expect(screen.getByText("Bloqueada")).toBeInTheDocument();
+    // [Recomendado] must NOT appear (distinct from advisory chip)
+    expect(screen.queryByText("[Recomendado]")).not.toBeInTheDocument();
+    // Blocking reason chip must be present — uses "Falta:" prefix label
+    expect(screen.getByText(/Falta:/)).toBeInTheDocument();
+    // Each unmet requirement name must be visible/accessible
+    expect(screen.getByText(/Álgebra Lineal/)).toBeInTheDocument();
+    expect(screen.getByText(/Cálculo Diferencial/)).toBeInTheDocument();
+  });
+
+  it("does NOT show blocking reason chip when BLOCKED but no unmetRequirements", () => {
+    render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Blocked}
+        unmetRequirements={[]}
+      />
+    );
+    expect(screen.getByText("Bloqueada")).toBeInTheDocument();
+    expect(screen.queryByText(/Falta:/)).not.toBeInTheDocument();
+  });
+
+  it("does NOT show blocking reason chip when BLOCKED and unmetRequirements is undefined (omitted)", () => {
+    // unmetRequirements prop is intentionally omitted — must not crash and must not render chip
+    render(<CourseStatusBadge status={CourseProgressStatus.Blocked} />);
+    expect(screen.getByText("Bloqueada")).toBeInTheDocument();
+    expect(screen.queryByText(/Falta:/)).not.toBeInTheDocument();
+  });
+
+  it("does NOT show blocking reason chip on AVAILABLE courses (available with unmetRequirements shows [Recomendado] only)", () => {
+    render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Available}
+        unmetRequirements={["Cálculo I"]}
+      />
+    );
+    expect(screen.getByText("[Recomendado]")).toBeInTheDocument();
+    expect(screen.queryByText(/Falta:/)).not.toBeInTheDocument();
+  });
 });
 
 /**
@@ -109,6 +156,17 @@ describe("CourseStatusBadge — axe zero-violations (T-WU6.8)", () => {
       <CourseStatusBadge
         status={CourseProgressStatus.Available}
         unmetRequirements={["Cálculo I"]}
+      />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it("BLOCKED with unmetRequirements (blocking reason chip): no axe violations", async () => {
+    const { container } = render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Blocked}
+        unmetRequirements={["Álgebra Lineal", "Cálculo Diferencial"]}
       />
     );
     const results = await axe(container);
