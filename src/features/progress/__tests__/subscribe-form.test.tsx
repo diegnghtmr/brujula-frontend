@@ -5,17 +5,18 @@
  * SUB-1-HP: renders program/plan/journey selectors; submits POST /me/subscriptions with
  *            Idempotency-Key (uuidv4); navigates to /progress/subscriptions on 201.
  * SUB-1-CAP: shows 409 error (cap or duplicate) to the user.
+ * SUB-1-JOURNEYS: journey dropdown is populated from GET /api/v1/journeys (not plan.applicableJourneys).
+ * SUB-1-JOURNEYS-ERR: when GET /api/v1/journeys returns 500, shows role="alert" notice.
  *
  * CRITICAL (Fase-2 C-2): EVERY query/mutation the component fires must have an MSW handler.
  * This form fires:
- *   GET /api/v1/programs  (program selector)
- *   GET /api/v1/programs/:programId/plans  (plan options, after program selected)
+ *   GET /api/v1/programs           (program selector)
+ *   GET /api/v1/programs/:id/plans (plan options, after program selected)
+ *   GET /api/v1/journeys           (journey selector — loaded independently from plan)
  *   POST /api/v1/me/subscriptions  (create)
  *
- * NOTE (FIX-W-2): GET /api/v1/me/subscriptions was a phantom handler — SubscribeForm does NOT
- * fire this query. The handler and the false comment entry have been removed.
- *
- * Assertion strategy: assert on rendered data (program name visible), not just "no crash".
+ * NOTE: Journey options come from GET /api/v1/journeys, NOT from plan.applicableJourneys.
+ * The backend deliberately returns applicableJourneys: [] on plan responses.
  */
 
 import { describe, it, expect } from "vitest";
@@ -48,6 +49,7 @@ const PROGRAM_PAGE = {
   totalPages: 1,
 };
 
+// Note: plan.applicableJourneys is intentionally empty — journeys come from GET /journeys
 const PLAN_PAGE = {
   content: [
     {
@@ -56,10 +58,7 @@ const PLAN_PAGE = {
       name: "Plan 2020",
       status: "ACTIVE",
       totalCredits: 163,
-      applicableJourneys: [
-        { code: "DIURNA", name: "Diurna" },
-        { code: "NOCTURNA", name: "Nocturna" },
-      ],
+      applicableJourneys: [],
       version: 1,
     },
   ],
@@ -68,6 +67,11 @@ const PLAN_PAGE = {
   totalElements: 1,
   totalPages: 1,
 };
+
+const JOURNEYS = [
+  { id: "j-1", code: "DIURNA", name: "Diurna", active: true },
+  { id: "j-2", code: "NOCTURNA", name: "Nocturna", active: true },
+];
 
 const SUBSCRIPTION_CREATED = {
   id: "sub-1",
@@ -100,7 +104,8 @@ describe("SubscribeForm (SUB-1-HP)", () => {
   it("renders program selector with loaded programs", async () => {
     server.use(
       http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
-      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content))
+      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
+      http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS))
     );
 
     render(
@@ -116,14 +121,70 @@ describe("SubscribeForm (SUB-1-HP)", () => {
     });
   });
 
+  it("populates journey dropdown from GET /journeys (not plan.applicableJourneys)", async () => {
+    server.use(
+      http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
+      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
+      http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS))
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route path="/progress/subscribe" element={<SubscribeForm />} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // Wait for program options to load
+    await waitFor(() => {
+      const select = screen.getByRole("combobox", { name: /programa/i });
+      const options = within(select).getAllByRole("option");
+      expect(options.length).toBeGreaterThan(1);
+    });
+
+    // Select program
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /programa/i }),
+      "prog-1"
+    );
+
+    // Wait for plan options to load
+    await waitFor(() => {
+      const planSelect = screen.getByRole("combobox", { name: /plan/i });
+      const options = within(planSelect).getAllByRole("option");
+      expect(options.length).toBeGreaterThan(1);
+    });
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /plan/i }),
+      "plan-1"
+    );
+
+    // Journey select should now show options from GET /journeys (DIURNA + NOCTURNA)
+    await waitFor(() => {
+      const journeySelect = screen.getByRole("combobox", { name: /jornada/i });
+      const options = within(journeySelect).getAllByRole("option");
+      // placeholder + DIURNA + NOCTURNA = 3 options minimum
+      expect(options.length).toBeGreaterThanOrEqual(3);
+    });
+
+    // Both journey names should appear as options
+    const journeySelect = screen.getByRole("combobox", { name: /jornada/i });
+    expect(within(journeySelect).getByRole("option", { name: /diurna/i })).toBeInTheDocument();
+    expect(within(journeySelect).getByRole("option", { name: /nocturna/i })).toBeInTheDocument();
+  });
+
   it("submits POST /me/subscriptions with Idempotency-Key and navigates to /progress/subscriptions", async () => {
     let capturedIdempotencyKey: string | null = null;
+    let capturedBody: unknown = null;
 
     server.use(
       http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
       http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
-      http.post("/api/v1/me/subscriptions", ({ request }) => {
+      http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS)),
+      http.post("/api/v1/me/subscriptions", async ({ request }) => {
         capturedIdempotencyKey = request.headers.get("Idempotency-Key");
+        capturedBody = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json(SUBSCRIPTION_CREATED, { status: 201 });
       })
     );
@@ -161,7 +222,7 @@ describe("SubscribeForm (SUB-1-HP)", () => {
       "plan-1"
     );
 
-    // Wait for journey options to be populated from the selected plan
+    // Wait for journey options to be populated from GET /journeys
     await waitFor(() => {
       const journeySelect = screen.getByRole("combobox", { name: /jornada/i });
       const options = within(journeySelect).getAllByRole("option");
@@ -185,12 +246,17 @@ describe("SubscribeForm (SUB-1-HP)", () => {
     expect(capturedIdempotencyKey).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
+
+    // POST body must include the selected referenceJourneyCode
+    expect(capturedBody).not.toBeNull();
+    expect((capturedBody as Record<string, unknown>).referenceJourneyCode).toBe("DIURNA");
   });
 
   it("shows error message when server returns 409 (cap=2 or duplicate)", async () => {
     server.use(
       http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
       http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
+      http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS)),
       http.post("/api/v1/me/subscriptions", () =>
         HttpResponse.json(
           {
@@ -255,7 +321,8 @@ describe("SubscribeForm (SUB-1-HP)", () => {
   it("shows required field validation error when submitting without selecting program", async () => {
     server.use(
       http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
-      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content))
+      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
+      http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS))
     );
 
     const user = userEvent.setup();
@@ -275,6 +342,51 @@ describe("SubscribeForm (SUB-1-HP)", () => {
     await waitFor(() => {
       // Validation error should appear for program field
       expect(screen.getByText("Seleccioná un programa.")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error alert when GET /journeys returns 500", async () => {
+    server.use(
+      http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
+      http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
+      http.get("/api/v1/journeys", () => HttpResponse.json({ detail: "Internal Server Error" }, { status: 500 }))
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route path="/progress/subscribe" element={<SubscribeForm />} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // Wait for program options to load
+    await waitFor(() => {
+      const select = screen.getByRole("combobox", { name: /programa/i });
+      const options = within(select).getAllByRole("option");
+      expect(options.length).toBeGreaterThan(1);
+    });
+
+    // Select program and plan to trigger journey loading
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /programa/i }),
+      "prog-1"
+    );
+
+    await waitFor(() => {
+      const planSelect = screen.getByRole("combobox", { name: /plan/i });
+      const options = within(planSelect).getAllByRole("option");
+      expect(options.length).toBeGreaterThan(1);
+    });
+
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: /plan/i }),
+      "plan-1"
+    );
+
+    // The journeys error alert should be visible
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
     });
   });
 });
