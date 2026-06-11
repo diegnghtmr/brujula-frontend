@@ -8,18 +8,30 @@
  * 4. Shows empty state when no programs returned.
  * 5. Pagination next button advances page (request param verified).
  * 6. Pagination next button re-renders with new page content (DOM verified).
+ *
+ * URL persistence scenarios (CAT-001-URL):
+ * 7. ?page=1 in URL fetches page 1 and shows "Página 2 de N".
+ * 8. Clicking "Siguiente" updates URL search param to ?page=1.
+ * 9. Clicking "Anterior" from page 1 returns to page 0 and disables the button.
+ * 10. Invalid ?page=abc or ?page=-3 falls back to page 0 (no crash).
  */
 
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Routes, Route } from "react-router";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router";
 import { http, HttpResponse } from "msw";
 import { server } from "@/test/msw/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import { ProgramListPage } from "@/features/catalog/components/program-list-page";
 import { ProgramCard } from "@/features/catalog/components/program-card";
+
+/** Helper component that exposes current search params into a DOM element for assertions. */
+function SearchParamSpy() {
+  const location = useLocation();
+  return <div data-testid="search-spy">{location.search}</div>;
+}
 
 function createWrapper(initialPath = "/catalog/programs") {
   const queryClient = new QueryClient({
@@ -322,5 +334,223 @@ describe("ProgramCard — keyboard accessibility (WCAG 2.1.1)", () => {
     render(<ProgramCard program={program} />);
     // Without onSelect: article is purely presentational — no button role
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CAT-001-URL: URL-based page persistence
+// ---------------------------------------------------------------------------
+
+const PROGRAM_PAGE_MULTI_P0 = {
+  content: [
+    {
+      id: "url-prog-1",
+      name: "Ingeniería de Sistemas URL",
+      faculty: "Facultad de Ingeniería",
+      status: "ACTIVE",
+      availableJourneys: [],
+      version: 1,
+    },
+  ],
+  page: 0,
+  size: 20,
+  totalElements: 40,
+  totalPages: 2,
+};
+
+const PROGRAM_PAGE_MULTI_P1 = {
+  content: [
+    {
+      id: "url-prog-2",
+      name: "Medicina General URL",
+      faculty: "Facultad de Medicina",
+      status: "ACTIVE",
+      availableJourneys: [],
+      version: 1,
+    },
+  ],
+  page: 1,
+  size: 20,
+  totalElements: 40,
+  totalPages: 2,
+};
+
+describe("ProgramListPage — URL pagination persistence (CAT-001-URL)", () => {
+  it("reads ?page=1 from URL: fetches page 1 and shows 'Página 2 de N'", async () => {
+    let requestedPage: number | null = null;
+
+    server.use(
+      http.get("/api/v1/programs", ({ request }) => {
+        const url = new URL(request.url);
+        requestedPage = Number(url.searchParams.get("page") ?? "0");
+        return HttpResponse.json(
+          requestedPage === 1 ? PROGRAM_PAGE_MULTI_P1 : PROGRAM_PAGE_MULTI_P0
+        );
+      })
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/catalog/programs?page=1"]}>
+          <Routes>
+            <Route path="/catalog/programs" element={<ProgramListPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // The API must have been called with page=1
+    await waitFor(() => {
+      expect(requestedPage).toBe(1);
+    });
+
+    // The pagination label must say "Página 2 de 2"
+    expect(await screen.findByText(/página 2 de 2/i)).toBeInTheDocument();
+  });
+
+  it("clicking 'Siguiente' updates the URL search param to ?page=1", async () => {
+    server.use(
+      http.get("/api/v1/programs", ({ request }) => {
+        const url = new URL(request.url);
+        const page = Number(url.searchParams.get("page") ?? "0");
+        return HttpResponse.json(page === 1 ? PROGRAM_PAGE_MULTI_P1 : PROGRAM_PAGE_MULTI_P0);
+      })
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const user = userEvent.setup();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/catalog/programs"]}>
+          <Routes>
+            <Route
+              path="/catalog/programs"
+              element={
+                <>
+                  <ProgramListPage />
+                  <SearchParamSpy />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Wait for initial data
+    await screen.findByText("Ingeniería de Sistemas URL");
+
+    await user.click(screen.getByRole("button", { name: /siguiente/i }));
+
+    // URL search param must now include page=1
+    await waitFor(() => {
+      expect(screen.getByTestId("search-spy").textContent).toContain("page=1");
+    });
+  });
+
+  it("clicking 'Anterior' from page 1 returns to page 0 and disables 'Anterior'", async () => {
+    server.use(
+      http.get("/api/v1/programs", ({ request }) => {
+        const url = new URL(request.url);
+        const page = Number(url.searchParams.get("page") ?? "0");
+        return HttpResponse.json(page === 1 ? PROGRAM_PAGE_MULTI_P1 : PROGRAM_PAGE_MULTI_P0);
+      })
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const user = userEvent.setup();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/catalog/programs?page=1"]}>
+          <Routes>
+            <Route
+              path="/catalog/programs"
+              element={
+                <>
+                  <ProgramListPage />
+                  <SearchParamSpy />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Wait for page 1 data
+    await screen.findByText("Medicina General URL");
+
+    await user.click(screen.getByRole("button", { name: /anterior/i }));
+
+    // URL must go back to page=0 (param absent or "0")
+    await waitFor(() => {
+      const spy = screen.getByTestId("search-spy").textContent ?? "";
+      const hasPage0 = !spy.includes("page=") || spy.includes("page=0");
+      expect(hasPage0).toBe(true);
+    });
+
+    // "Anterior" button must be disabled at page 0
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /anterior/i })).toBeDisabled();
+    });
+  });
+
+  it("invalid ?page=abc falls back to page 0 without crashing", async () => {
+    server.use(
+      http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE_MULTI_P0))
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/catalog/programs?page=abc"]}>
+          <Routes>
+            <Route path="/catalog/programs" element={<ProgramListPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Should render content normally, starting at page 1 display (page 0 internally)
+    expect(await screen.findByText("Ingeniería de Sistemas URL")).toBeInTheDocument();
+    expect(screen.getByText(/página 1 de/i)).toBeInTheDocument();
+  });
+
+  it("invalid ?page=-3 falls back to page 0 without crashing", async () => {
+    server.use(
+      http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE_MULTI_P0))
+    );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/catalog/programs?page=-3"]}>
+          <Routes>
+            <Route path="/catalog/programs" element={<ProgramListPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("Ingeniería de Sistemas URL")).toBeInTheDocument();
+    expect(screen.getByText(/página 1 de/i)).toBeInTheDocument();
   });
 });

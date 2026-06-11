@@ -9,14 +9,24 @@
  * - Container-presentational split: this container manages query state.
  */
 
-import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
 import type { Program } from "@/api/generated/models/program";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ProgramCard } from "./program-card";
 import { cn } from "@/lib/utils";
+
+/** Parse the ?page= query param into a 0-based page index. Falls back to 0 for missing, NaN, or negative values. */
+function parsePageParam(searchParams: URLSearchParams): number {
+  const raw = searchParams.get("page");
+  if (raw === null) return 0;
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed) || parsed < 0) return 0;
+  return parsed;
+}
 
 const catalogApi = createApiInstance(CatalogApi);
 
@@ -34,7 +44,8 @@ const PROGRAMS_QUERY_KEY = (page: number) =>
   ["programs", "list", page] as const;
 
 function ProgramListPage() {
-  const [page, setPage] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parsePageParam(searchParams);
 
   const { data, isLoading } = useQuery({
     queryKey: PROGRAMS_QUERY_KEY(page),
@@ -61,15 +72,12 @@ function ProgramListPage() {
       </header>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando programas...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <span className="sr-only">Cargando programas…</span>
+          <Skeleton className="h-32 w-full rounded-none" />
+          <Skeleton className="h-32 w-full rounded-none" />
+          <Skeleton className="h-32 w-full rounded-none" />
+          <Skeleton className="h-32 w-full rounded-none" />
         </div>
       ) : programs.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
@@ -92,7 +100,18 @@ function ProgramListPage() {
               className="flex items-center justify-center gap-3 mt-4"
             >
               <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                onClick={() =>
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    const newPage = Math.max(0, page - 1);
+                    if (newPage === 0) {
+                      next.delete("page");
+                    } else {
+                      next.set("page", String(newPage));
+                    }
+                    return next;
+                  })
+                }
                 disabled={page === 0}
                 aria-label="Página anterior"
                 className={cn(
@@ -109,7 +128,13 @@ function ProgramListPage() {
               </span>
 
               <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                onClick={() =>
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("page", String(Math.min(totalPages - 1, page + 1)));
+                    return next;
+                  })
+                }
                 disabled={page >= totalPages - 1}
                 aria-label="Página siguiente"
                 className={cn(
