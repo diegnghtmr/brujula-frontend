@@ -24,6 +24,7 @@ import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { ProgressApi } from "@/api/generated/api/progress-api";
+import { OfferingsApi } from "@/api/generated/api/offerings-api";
 import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import type { CurriculumCourse } from "@/api/generated/models/curriculum-course";
@@ -32,6 +33,7 @@ import { CourseStatusBadge } from "./course-status-badge";
 import { cn } from "@/lib/utils";
 
 const progressApi = createApiInstance(ProgressApi);
+const offeringsApi = createApiInstance(OfferingsApi);
 
 /** Generate a v4 UUID using crypto.randomUUID when available. */
 function generateUUID(): string {
@@ -81,6 +83,18 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
   const [selectedStatus, setSelectedStatus] = useState<"PASSED" | "FAILED" | "CANCELLED">("PASSED");
   const showGrade = selectedStatus !== "CANCELLED";
 
+  // Load academic periods from API — same pattern as SimulationCreateForm
+  const {
+    data: periods,
+    isLoading: periodsLoading,
+    isError: periodsError,
+  } = useQuery({
+    queryKey: ["periods"],
+    queryFn: () => offeringsApi.listPeriods({}).then((r) => r.data),
+  });
+
+  const hasPeriods = (periods?.length ?? 0) > 0;
+
   const {
     register,
     handleSubmit,
@@ -124,6 +138,9 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
     },
   });
 
+  // Submit is disabled when: mutation pending, periods still loading, periods errored, or no periods available
+  const submitDisabled = createMutation.isPending || periodsLoading || periodsError || !hasPeriods;
+
   return (
     <div
       className={cn(
@@ -131,6 +148,19 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
         "flex flex-col gap-3"
       )}
     >
+      {periodsError && (
+        <div
+          role="alert"
+          className={cn(
+            "p-2 text-xs border rounded",
+            "bg-red-50 border-red-300 text-red-800",
+            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+          )}
+        >
+          No se pudieron cargar los períodos académicos. Intentá nuevamente.
+        </div>
+      )}
+
       {apiError && (
         <div
           role="alert"
@@ -208,23 +238,38 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           </div>
         )}
 
-        {/* Period ID */}
+        {/* Period select — values come from GET /periods API */}
         <div className="flex flex-col gap-1">
           <label htmlFor={`period-${course.courseId}`} className="text-xs font-medium text-foreground">
-            Período (ID del semestre)
+            Período académico
           </label>
-          <input
+          <select
             id={`period-${course.courseId}`}
-            type="text"
             aria-label="Período"
-            placeholder="UUID del período académico"
+            disabled={periodsLoading || periodsError || !hasPeriods}
             className={cn(
               "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-1 focus:ring-primary",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
               errors.periodId && "border-red-500"
             )}
             {...register("periodId")}
-          />
+          >
+            {periodsLoading && (
+              <option value="" disabled>Cargando períodos...</option>
+            )}
+            {!periodsLoading && !periodsError && !hasPeriods && (
+              <option value="" disabled>No hay períodos disponibles</option>
+            )}
+            {!periodsLoading && !periodsError && hasPeriods && (
+              <option value="">Seleccioná un período...</option>
+            )}
+            {(periods ?? []).map((period) => (
+              <option key={period.id} value={period.id}>
+                {period.name}
+              </option>
+            ))}
+          </select>
           {errors.periodId && (
             <p className="text-xs text-red-600">{errors.periodId.message}</p>
           )}
@@ -233,7 +278,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={createMutation.isPending}
+            disabled={submitDisabled}
             aria-label="Guardar intento"
             className={cn(
               "px-3 py-1.5 text-xs font-medium rounded border transition-colors",

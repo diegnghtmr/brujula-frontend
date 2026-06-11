@@ -359,6 +359,135 @@ describe("MallaView error states (S-3 parity with StudyPlanPage)", () => {
   });
 });
 
+describe("MallaView ?journeyCode= query param initialization (W-2)", () => {
+  it("initializes to NOCTURNA when ?journeyCode=NOCTURNA is in the URL", async () => {
+    // The malla request must go out with journeyCode=NOCTURNA on the first render —
+    // MallaView reads the query param as its initial journey state.
+    const malaRequests: string[] = [];
+
+    server.use(
+      http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
+      http.get(`/api/v1/plans/${PLAN_ID}/malla`, ({ request }) => {
+        const url = new URL(request.url);
+        malaRequests.push(url.searchParams.get("journeyCode") ?? "");
+        const journey = url.searchParams.get("journeyCode");
+        return HttpResponse.json(journey === "NOCTURNA" ? MALLA_NOCTURNA : MALLA_DIURNA);
+      })
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/curriculum/plans/:planId/malla"
+          element={<MallaView />}
+        />
+      </Routes>,
+      { wrapper: createWrapper(`/curriculum/plans/${PLAN_ID}/malla?journeyCode=NOCTURNA`) }
+    );
+
+    // NOCTURNA malla has only 1 semester — confirms the right journey was fetched
+    await screen.findByText(/semestre 1/i);
+    expect(screen.queryByText(/semestre 2/i)).not.toBeInTheDocument();
+
+    // The very first malla request must have been for NOCTURNA
+    expect(malaRequests[0]).toBe("NOCTURNA");
+  });
+
+  it("falls back to DIURNA when ?journeyCode= is absent", async () => {
+    const malaRequests: string[] = [];
+
+    server.use(
+      http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
+      http.get(`/api/v1/plans/${PLAN_ID}/malla`, ({ request }) => {
+        const url = new URL(request.url);
+        malaRequests.push(url.searchParams.get("journeyCode") ?? "");
+        return HttpResponse.json(MALLA_DIURNA);
+      })
+    );
+
+    // No ?journeyCode= in URL
+    render(
+      <Routes>
+        <Route
+          path="/curriculum/plans/:planId/malla"
+          element={<MallaView />}
+        />
+      </Routes>,
+      { wrapper: createWrapper(`/curriculum/plans/${PLAN_ID}/malla`) }
+    );
+
+    await screen.findByText(/semestre 1/i);
+    // Should default to DIURNA
+    expect(malaRequests[0]).toBe("DIURNA");
+  });
+
+  it("falls back to DIURNA when ?journeyCode= contains an invalid/unknown value", async () => {
+    const malaRequests: string[] = [];
+
+    server.use(
+      http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
+      http.get(`/api/v1/plans/${PLAN_ID}/malla`, ({ request }) => {
+        const url = new URL(request.url);
+        malaRequests.push(url.searchParams.get("journeyCode") ?? "");
+        return HttpResponse.json(MALLA_DIURNA);
+      })
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/curriculum/plans/:planId/malla"
+          element={<MallaView />}
+        />
+      </Routes>,
+      { wrapper: createWrapper(`/curriculum/plans/${PLAN_ID}/malla?journeyCode=INVALID_CODE`) }
+    );
+
+    await screen.findByText(/semestre 1/i);
+    // Unknown code must fall back to DIURNA
+    expect(malaRequests[0]).toBe("DIURNA");
+  });
+
+  it("manual toggle still works after initial load from query param", async () => {
+    const malaRequests: string[] = [];
+
+    server.use(
+      http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
+      http.get(`/api/v1/plans/${PLAN_ID}/malla`, ({ request }) => {
+        const url = new URL(request.url);
+        malaRequests.push(url.searchParams.get("journeyCode") ?? "");
+        const journey = url.searchParams.get("journeyCode");
+        return HttpResponse.json(journey === "NOCTURNA" ? MALLA_NOCTURNA : MALLA_DIURNA);
+      })
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/curriculum/plans/:planId/malla"
+          element={<MallaView />}
+        />
+      </Routes>,
+      { wrapper: createWrapper(`/curriculum/plans/${PLAN_ID}/malla?journeyCode=NOCTURNA`) }
+    );
+
+    // Starts as NOCTURNA (1 semester)
+    await screen.findByText(/semestre 1/i);
+    expect(screen.queryByText(/semestre 2/i)).not.toBeInTheDocument();
+
+    // Toggle to DIURNA manually
+    const diurnaBtn = screen.getByRole("button", { name: /diurna/i });
+    await user.click(diurnaBtn);
+
+    // DIURNA malla has 2 semesters
+    await waitFor(() => {
+      expect(screen.getByText(/semestre 2/i)).toBeInTheDocument();
+    });
+    expect(malaRequests).toContain("DIURNA");
+  });
+});
+
 describe("MallaView journey toggle (CUR-008)", () => {
   it("switching journey refetches malla with the selected journeyCode", async () => {
     const journeyRequests: string[] = [];

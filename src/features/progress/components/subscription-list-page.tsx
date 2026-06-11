@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
 import { cn } from "@/lib/utils";
@@ -109,7 +109,7 @@ function SubscriptionListPage() {
                   {sub.programName}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {sub.planName} · {sub.referenceJourney.name}
+                  {sub.planName}{sub.referenceJourney ? ` · ${sub.referenceJourney.name}` : ""}
                 </p>
               </div>
 
@@ -138,6 +138,17 @@ function SubscriptionListPage() {
                 >
                   Ver resumen
                 </button>
+                {sub.referenceJourney && (
+                  <Link
+                    to={`/curriculum/plans/${sub.planId}/malla?journeyCode=${encodeURIComponent(sub.referenceJourney.code)}`}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded border transition-colors",
+                      "border-border hover:bg-muted/40"
+                    )}
+                  >
+                    Ver malla
+                  </Link>
+                )}
               </div>
             </li>
           ))}

@@ -13,7 +13,7 @@
  */
 
 import { useState } from "react";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CurriculumApi } from "@/api/generated/api/curriculum-api";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
@@ -27,9 +27,21 @@ const catalogApi = createApiInstance(CatalogApi);
 /** Default journey code when plan has no journey info yet. */
 const DEFAULT_JOURNEY = "DIURNA";
 
+/** Journey codes accepted by the backend and rendered by this component. */
+const VALID_JOURNEY_CODES = new Set(["DIURNA", "NOCTURNA"]);
+
 function MallaView() {
   const { planId } = useParams<{ planId: string }>();
-  const [selectedJourney, setSelectedJourney] = useState(DEFAULT_JOURNEY);
+  const [searchParams] = useSearchParams();
+
+  // Initialize from ?journeyCode= query param; fall back to DEFAULT_JOURNEY when
+  // the param is absent or contains an unrecognised value.
+  const initialJourney = (() => {
+    const param = searchParams.get("journeyCode");
+    return param && VALID_JOURNEY_CODES.has(param) ? param : DEFAULT_JOURNEY;
+  })();
+
+  const [selectedJourney, setSelectedJourney] = useState(initialJourney);
 
   // Fetch plan metadata to discover available journeys
   const { data: plan } = useQuery({

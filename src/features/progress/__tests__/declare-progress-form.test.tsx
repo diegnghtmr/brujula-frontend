@@ -7,9 +7,14 @@
  * PRG-1-GRADE-MISMATCH:  shows 422 error (grade-status mismatch) to user
  * PRG-1-CANCELLED-GRADE: grade field hidden when CANCELLED selected
  * PRG-1-MULTI-ATTEMPT:   shows 409 conflict error to user
+ * Slice-B-PERIOD-PICKER: periodId replaced with <select> from GET /periods
+ *   - B.3.1 combobox populated from API, submit disabled during load, selectOptions works
+ *   - B.3.2 empty periods list → disabled select + "No hay períodos disponibles", submit disabled
+ *   - B.3.3 periods API error → role="alert", submit disabled
  *
  * CRITICAL (Fase-2 C-2): EVERY query this component fires must have a registered MSW handler:
  *   GET /api/v1/me/subscriptions/{subscriptionId}/curriculum  (malla)
+ *   GET /api/v1/periods  (period picker — Slice B)
  *   POST /api/v1/me/course-attempts  (declare attempt)
  */
 
@@ -88,6 +93,11 @@ const CURRICULUM_VIEW_NOCTURNA = {
   referenceJourney: { code: "NOCTURNA", name: "Nocturna" },
 };
 
+const PERIODS_FIXTURE = [
+  { id: "period-p1", name: "2025-1", status: "ACTIVE", version: 0 },
+  { id: "period-p2", name: "2025-2", status: "ACTIVE", version: 0 },
+];
+
 function createWrapper(initialPath = `/progress/subscriptions/${SUBSCRIPTION_ID}/declare`) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -104,13 +114,158 @@ function createWrapper(initialPath = `/progress/subscriptions/${SUBSCRIPTION_ID}
     );
 }
 
+// ---------------------------------------------------------------------------
+// Slice B — Period picker tests (B.3.1 / B.3.2 / B.3.3)
+// ---------------------------------------------------------------------------
+
+describe("DeclareProgressForm — Period picker (Slice B)", () => {
+  it("B.3.1: submit disabled + loading indicator present while periods load; selectOptions enables submit after resolve", async () => {
+    // Use a promise gate so the MSW handler blocks until we have asserted the loading state.
+    // This test MUST fail if `periodsLoading` is removed from the `submitDisabled` expression.
+    let releasePeriods!: () => void;
+    const periodsGate = new Promise<void>((resolve) => {
+      releasePeriods = resolve;
+    });
+
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", async () => {
+        // Block until the test explicitly releases the gate
+        await periodsGate;
+        return HttpResponse.json(PERIODS_FIXTURE);
+      })
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+
+    // Open declare form for c-1
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    // --- LOADING STATE ASSERTIONS (gate not yet released — periods still in-flight) ---
+    // (1) Submit must be disabled while periods are loading
+    const submitBtn = await screen.findByRole("button", { name: /guardar intento/i });
+    expect(submitBtn).toBeDisabled();
+
+    // (2) Loading indicator option must be present ("Cargando períodos...")
+    expect(screen.getByText(/cargando períodos/i)).toBeInTheDocument();
+
+    // --- RESOLVED STATE: release the gate → handler returns PERIODS_FIXTURE ---
+    releasePeriods();
+
+    // Two periods from fixture must appear as options after resolution
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "2025-1" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "2025-2" })).toBeInTheDocument();
+    });
+
+    // Select a period → submit must become enabled
+    const periodSelect = screen.getByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p1");
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /guardar intento/i })).not.toBeDisabled();
+    });
+  });
+
+  it("B.3.2: empty periods list → disabled select + 'No hay períodos disponibles'; submit disabled", async () => {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json([]))
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    // Must show "No hay períodos disponibles"
+    await screen.findByText(/no hay períodos disponibles/i);
+
+    // Select must be disabled
+    const periodSelect = screen.getByRole("combobox", { name: /período/i });
+    expect(periodSelect).toBeDisabled();
+
+    // Submit must remain disabled
+    const submitBtn = screen.getByRole("button", { name: /guardar intento/i });
+    expect(submitBtn).toBeDisabled();
+  });
+
+  it("B.3.3: periods API 500 → role='alert' notice visible; submit disabled", async () => {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json({ detail: "Server error" }, { status: 500 }))
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    // Error notice must appear with role="alert"
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+
+    // Submit must remain disabled
+    const submitBtn = screen.getByRole("button", { name: /guardar intento/i });
+    expect(submitBtn).toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Original PRG-1 tests (migrated: textbox /período/i → selectOptions combobox /período/i)
+// ---------------------------------------------------------------------------
+
 describe("DeclareProgressForm (PRG-1-HP)", () => {
   it("renders curriculum malla with semester groupings", async () => {
     server.use(
       http.get(
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
-      )
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
     );
 
     render(
@@ -142,6 +297,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
       ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
       http.post("/api/v1/me/course-attempts", async ({ request }) => {
         capturedIdempotencyKey = request.headers.get("Idempotency-Key");
         capturedBody = await request.json();
@@ -179,12 +335,9 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
     await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "4.2");
 
-    // Fill periodId
-    await user.clear(screen.getByRole("textbox", { name: /período/i }));
-    await user.type(
-      screen.getByRole("textbox", { name: /período/i }),
-      "550e8400-e29b-41d4-a716-446655440001"
-    );
+    // Select period from combobox (migrated from textbox type to selectOptions)
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p1");
 
     // Submit
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
@@ -198,6 +351,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         subscriptionId: SUBSCRIPTION_ID,
         courseId: "c-1",
         status: "PASSED",
+        periodId: "period-p1",
       });
     });
   });
@@ -208,6 +362,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
       ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
       http.post("/api/v1/me/course-attempts", () =>
         HttpResponse.json(
           {
@@ -247,11 +402,9 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
     await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "2.5");
 
-    await user.clear(screen.getByRole("textbox", { name: /período/i }));
-    await user.type(
-      screen.getByRole("textbox", { name: /período/i }),
-      "550e8400-e29b-41d4-a716-446655440001"
-    );
+    // Select period from combobox (migrated from textbox type)
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p1");
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -265,7 +418,8 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
       http.get(
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
-      )
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
     );
 
     const user = userEvent.setup();
@@ -305,6 +459,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW_NOCTURNA)
       ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
       http.post("/api/v1/me/course-attempts", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json(
@@ -341,16 +496,14 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
     await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "3.8");
 
-    await user.clear(screen.getByRole("textbox", { name: /período/i }));
-    await user.type(
-      screen.getByRole("textbox", { name: /período/i }),
-      "550e8400-e29b-41d4-a716-446655440002"
-    );
+    // Select period from combobox (migrated from textbox type)
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p2");
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
     await waitFor(() => {
-      expect(capturedBody).toMatchObject({ journeyCode: "NOCTURNA" });
+      expect(capturedBody).toMatchObject({ journeyCode: "NOCTURNA", periodId: "period-p2" });
     });
   });
 
@@ -363,6 +516,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
       ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
       http.post("/api/v1/me/course-attempts", async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json(ATTEMPT_CREATED, { status: 201 });
@@ -396,11 +550,9 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
     await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "4.2");
 
-    await user.clear(screen.getByRole("textbox", { name: /período/i }));
-    await user.type(
-      screen.getByRole("textbox", { name: /período/i }),
-      "550e8400-e29b-41d4-a716-446655440001"
-    );
+    // Select period from combobox (migrated from textbox type)
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p1");
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -410,6 +562,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         courseId: "c-1",
         status: "PASSED",
         journeyCode: "DIURNA",
+        periodId: "period-p1",
       });
     });
   });
@@ -421,6 +574,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
         () => HttpResponse.json(CURRICULUM_VIEW)
       ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
       http.post("/api/v1/me/course-attempts", () =>
         HttpResponse.json(
           {
@@ -460,11 +614,9 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
     await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "3.5");
 
-    await user.clear(screen.getByRole("textbox", { name: /período/i }));
-    await user.type(
-      screen.getByRole("textbox", { name: /período/i }),
-      "550e8400-e29b-41d4-a716-446655440001"
-    );
+    // Select period from combobox (migrated from textbox type)
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await user.selectOptions(periodSelect, "period-p1");
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
