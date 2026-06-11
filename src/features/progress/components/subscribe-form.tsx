@@ -4,11 +4,15 @@
  * Flow:
  * 1. Load active programs → populate program selector.
  * 2. On program select → load active plans for that program.
- * 3. On plan select → populate journey selector from plan.applicableJourneys.
+ * 3. On plan select → enable journey selector (options loaded from GET /journeys).
  * 4. Submit → POST /me/subscriptions with Idempotency-Key (uuid v4 per attempt).
  * 5. On 201 → navigate to subscriptions list.
  * 6. On 409 → show error alert (cap=2 / duplicate program).
  * 7. On 422 → show validation error.
+ *
+ * NOTE: Journey options come from GET /journeys (CatalogApi.listJourneys), NOT from
+ * plan.applicableJourneys. The backend deliberately returns applicableJourneys: []
+ * on plan responses (not loaded in ProgramView scope).
  *
  * RHF + Zod 4 validation; TanStack Query for server state.
  */
@@ -117,9 +121,17 @@ function SubscribeForm() {
 
   const plans = (planList ?? []) as StudyPlanPageFull["content"];
 
-  // Journeys from selected plan
-  const selectedPlan = plans.find((p) => p.id === selectedPlanId);
-  const journeys = selectedPlan?.applicableJourneys ?? [];
+  // Load journeys from GET /journeys — independent of plan (plan.applicableJourneys is always empty)
+  const {
+    data: journeyList,
+    isLoading: journeysLoading,
+    isError: journeysError,
+  } = useQuery({
+    queryKey: ["journeys"],
+    queryFn: () => catalogApi.listJourneys().then((r) => r.data),
+  });
+
+  const journeys = journeyList ?? [];
 
   // Create subscription mutation
   const createMutation = useMutation({
@@ -161,6 +173,9 @@ function SubscribeForm() {
     createMutation.mutate(data);
   }
 
+  // Submit is blocked while journeys are loading or errored (same pattern as DeclareProgressForm)
+  const submitDisabled = isSubmitting || createMutation.isPending || journeysLoading;
+
   return (
     <div className="p-6 max-w-lg mx-auto">
       <header className="mb-6">
@@ -182,6 +197,19 @@ function SubscribeForm() {
           )}
         >
           {apiError}
+        </div>
+      )}
+
+      {journeysError && (
+        <div
+          role="alert"
+          className={cn(
+            "mb-4 p-3 border rounded text-sm",
+            "bg-red-50 border-red-300 text-red-800",
+            "dark:bg-red-900/20 dark:border-red-700 dark:text-red-300"
+          )}
+        >
+          No se pudieron cargar las jornadas. Intentá nuevamente.
         </div>
       )}
 
@@ -255,7 +283,7 @@ function SubscribeForm() {
           )}
         </div>
 
-        {/* Journey selector */}
+        {/* Journey selector — options from GET /journeys, enabled only after plan is selected */}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="referenceJourneyCode" className="text-sm font-medium text-foreground">
             Jornada de referencia
@@ -263,7 +291,7 @@ function SubscribeForm() {
           <select
             id="referenceJourneyCode"
             aria-label="Jornada"
-            disabled={!selectedPlanId || journeys.length === 0}
+            disabled={!selectedPlanId || journeysLoading || journeysError || journeys.length === 0}
             className={cn(
               "border rounded px-3 py-2 text-sm bg-background text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary",
@@ -288,7 +316,7 @@ function SubscribeForm() {
 
         <button
           type="submit"
-          disabled={isSubmitting || createMutation.isPending}
+          disabled={submitDisabled}
           aria-label="Suscribir"
           className={cn(
             "px-4 py-2 text-sm font-medium rounded border transition-colors",
