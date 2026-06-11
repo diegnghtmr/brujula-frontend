@@ -59,7 +59,11 @@ const STATUS_CONFIG = {
 
 interface CourseStatusBadgeProps {
   status: CourseProgressStatus;
-  /** Advisory unmet prerequisites — shown as [Recomendado] chip on AVAILABLE only. */
+  /**
+   * Unmet prerequisites.
+   * - AVAILABLE: shown as "[Recomendado]" advisory chip (soft/recommended prereqs).
+   * - BLOCKED: shown as "Falta:" blocking reason chip (required missing prereqs).
+   */
   unmetRequirements?: string[];
 }
 
@@ -67,6 +71,8 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.PENDING;
   const showAdvisory =
     status === "AVAILABLE" && unmetRequirements && unmetRequirements.length > 0;
+  const showBlockingReason =
+    status === "BLOCKED" && unmetRequirements && unmetRequirements.length > 0;
 
   return (
     <span className="inline-flex items-center gap-1.5 flex-wrap">
@@ -96,6 +102,31 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         >
           <span aria-hidden="true">▲</span>
           [Recomendado]
+        </span>
+      )}
+
+      {/* Blocking reason chip for REQUIRED missing prerequisites on BLOCKED courses.
+          Semantically and visually distinct from the advisory chip:
+          - Different color (red) vs advisory (yellow)
+          - Different copy ("Falta:") vs advisory ("[Recomendado]")
+          - Lists each unmet prerequisite as a visible, screen-reader-accessible item
+          - WCAG 2.2 AA: reason conveyed by color + icon + text (never color alone) */}
+      {showBlockingReason && (
+        <span
+          className={cn(
+            "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border",
+            "bg-red-50 text-red-800 border-red-300",
+            "dark:bg-red-900/20 dark:text-red-300 dark:border-red-700"
+          )}
+          role="note"
+          aria-label={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
+          title={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
+        >
+          <span aria-hidden="true">⛔</span>
+          <span>
+            {"Falta: "}
+            {unmetRequirements?.join(", ")}
+          </span>
         </span>
       )}
     </span>
