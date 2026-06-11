@@ -176,13 +176,15 @@ describe("SubscribeForm (SUB-1-HP)", () => {
 
   it("submits POST /me/subscriptions with Idempotency-Key and navigates to /progress/subscriptions", async () => {
     let capturedIdempotencyKey: string | null = null;
+    let capturedBody: unknown = null;
 
     server.use(
       http.get("/api/v1/programs", () => HttpResponse.json(PROGRAM_PAGE)),
       http.get("/api/v1/programs/:programId/plans", () => HttpResponse.json(PLAN_PAGE.content)),
       http.get("/api/v1/journeys", () => HttpResponse.json(JOURNEYS)),
-      http.post("/api/v1/me/subscriptions", ({ request }) => {
+      http.post("/api/v1/me/subscriptions", async ({ request }) => {
         capturedIdempotencyKey = request.headers.get("Idempotency-Key");
+        capturedBody = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json(SUBSCRIPTION_CREATED, { status: 201 });
       })
     );
@@ -244,6 +246,10 @@ describe("SubscribeForm (SUB-1-HP)", () => {
     expect(capturedIdempotencyKey).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
+
+    // POST body must include the selected referenceJourneyCode
+    expect(capturedBody).not.toBeNull();
+    expect((capturedBody as Record<string, unknown>).referenceJourneyCode).toBe("DIURNA");
   });
 
   it("shows error message when server returns 409 (cap=2 or duplicate)", async () => {

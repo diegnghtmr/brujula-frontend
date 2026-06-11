@@ -53,7 +53,6 @@ interface StudyPlanPageFull {
     name: string;
     status: string;
     totalCredits: number;
-    applicableJourneys: Array<{ code: string; name: string }>;
     version: number;
   }>;
   totalPages: number;
@@ -174,7 +173,7 @@ function SubscribeForm() {
   }
 
   // Submit is blocked while journeys are loading or errored (same pattern as DeclareProgressForm)
-  const submitDisabled = isSubmitting || createMutation.isPending || journeysLoading;
+  const submitDisabled = isSubmitting || createMutation.isPending || journeysLoading || journeysError;
 
   return (
     <div className="p-6 max-w-lg mx-auto">
