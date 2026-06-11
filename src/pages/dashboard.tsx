@@ -18,6 +18,7 @@ import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UserProfileCard } from "@/features/auth/components/user-profile-card";
 import { cn } from "@/lib/utils";
 
@@ -94,15 +95,11 @@ function DashboardPage() {
         </h2>
 
         {isLoading && (
-          <div className="flex items-center justify-center py-12" role="status">
-            <span className="sr-only">Cargando suscripciones...</span>
-            <div
-              className={cn(
-                "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-                "border-muted border-t-primary"
-              )}
-              aria-hidden="true"
-            />
+          <div role="status" aria-live="polite" className="flex flex-col gap-3">
+            <span className="sr-only">Cargando suscripciones…</span>
+            <Skeleton className="h-24 w-full rounded-none" />
+            <Skeleton className="h-24 w-full rounded-none" />
+            <Skeleton className="h-24 w-full rounded-none" />
           </div>
         )}
 

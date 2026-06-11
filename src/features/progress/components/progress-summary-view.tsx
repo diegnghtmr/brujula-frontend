@@ -19,6 +19,7 @@ import { useParams } from "react-router";
 import { ProgressApi } from "@/api/generated/api/progress-api";
 import { createApiInstance } from "@/api/client";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const progressApi = createApiInstance(ProgressApi);
@@ -52,15 +53,23 @@ function ProgressSummaryView() {
       </header>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando resumen de avance...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex flex-col gap-4">
+          <span className="sr-only">Cargando resumen de avance…</span>
+          {/* Credit summary block */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 border rounded-none bg-card border-border">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+          {/* Progress bar */}
+          <Skeleton className="h-2 w-full rounded-full" />
+          {/* Course count blocks */}
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-16 w-full rounded-none" />
+            <Skeleton className="h-16 w-full rounded-none" />
+          </div>
+          {/* Average panel */}
+          <Skeleton className="h-24 w-full rounded-none" />
         </div>
       )}
 

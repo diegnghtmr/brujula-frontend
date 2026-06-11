@@ -16,20 +16,91 @@ import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import type { ScheduleOption } from "@/api/generated/models/schedule-option";
 import type { Offering } from "@/api/generated/models/offering";
+import type { OfferingPage } from "@/api/generated/models/offering-page";
 import { useAddSelection } from "@/features/simulation/hooks/use-add-selection";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const offeringsApi = createApiInstance(OfferingsApi);
+const OFFERINGS_PAGE_SIZE = 100;
+const UNKNOWN_SEMESTER = Number.MAX_SAFE_INTEGER;
 
 interface OfferingBrowserProps {
   simulationId: string;
   periodId: string;
   programIds: string[];
+  selectedOfferingIds?: string[];
 }
 
 interface OfferingRowProps {
   simulationId: string;
   offering: Offering;
+}
+
+interface OfferingWithSemester extends Offering {
+  recommendedSemester?: number | null;
+}
+
+interface SemesterGroup {
+  semester: number | null;
+  offerings: OfferingWithSemester[];
+}
+
+async function fetchAllOfferingsForProgram(periodId: string, programId: string): Promise<Offering[]> {
+  const firstPage = await fetchOfferingsPage(periodId, programId, 0);
+  const offerings = [...firstPage.content];
+  const totalPages = firstPage.totalPages;
+
+  for (let page = 1; page < totalPages; page += 1) {
+    const nextPage = await fetchOfferingsPage(periodId, programId, page);
+    offerings.push(...nextPage.content);
+  }
+
+  return offerings;
+}
+
+function fetchOfferingsPage(periodId: string, programId: string, page: number): Promise<OfferingPage> {
+  return offeringsApi
+    .listOfferings({ periodId, programId, page, size: OFFERINGS_PAGE_SIZE })
+    .then((response) => response.data);
+}
+
+function getOfferingSemester(offering: OfferingWithSemester): number | null {
+  if (typeof offering.recommendedSemester === "number") {
+    return offering.recommendedSemester;
+  }
+
+  const notes = offering.notes ?? "";
+  const levelMatch = /(?:source\s+)?level\s+(\d+)/i.exec(notes);
+  if (!levelMatch?.[1]) return null;
+
+  return Number.parseInt(levelMatch[1], 10);
+}
+
+function groupOfferingsBySemester(offerings: Offering[]): SemesterGroup[] {
+  const groups = new Map<number | null, OfferingWithSemester[]>();
+
+  for (const offering of offerings) {
+    const semester = getOfferingSemester(offering as OfferingWithSemester);
+    const current = groups.get(semester) ?? [];
+    current.push(offering as OfferingWithSemester);
+    groups.set(semester, current);
+  }
+
+  return Array.from(groups.entries())
+    .map(([semester, groupOfferings]) => ({
+      semester,
+      offerings: groupOfferings.sort(compareOfferings),
+    }))
+    .sort((a, b) => semesterSortValue(a.semester) - semesterSortValue(b.semester));
+}
+
+function compareOfferings(a: OfferingWithSemester, b: OfferingWithSemester): number {
+  return a.courseName.localeCompare(b.courseName, "es", { sensitivity: "base" });
+}
+
+function semesterSortValue(semester: number | null): number {
+  return semester ?? UNKNOWN_SEMESTER;
 }
 
 function ScheduleOptionRow({
@@ -172,15 +243,17 @@ function OfferingRow({ simulationId, offering }: OfferingRowProps) {
   );
 }
 
-function OfferingBrowser({ simulationId, periodId, programIds }: OfferingBrowserProps) {
+function OfferingBrowser({
+  simulationId,
+  periodId,
+  programIds,
+  selectedOfferingIds = [],
+}: OfferingBrowserProps) {
   // Fetch offerings for ALL programIds (spec FE-002 — plural programs supported)
   const results = useQueries({
     queries: programIds.map((programId) => ({
-      queryKey: ["offerings", periodId, programId],
-      queryFn: () =>
-        offeringsApi
-          .listOfferings({ periodId, programId })
-          .then((r) => r.data),
+      queryKey: ["offerings", periodId, programId, "all-pages"],
+      queryFn: () => fetchAllOfferingsForProgram(periodId, programId),
       enabled: !!periodId,
     })),
   });
@@ -190,15 +263,12 @@ function OfferingBrowser({ simulationId, periodId, programIds }: OfferingBrowser
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8" role="status">
-        <span className="sr-only">Cargando ofertas...</span>
-        <div
-          className={cn(
-            "w-5 h-5 border-4 rounded-full motion-safe:animate-spin",
-            "border-muted border-t-primary"
-          )}
-          aria-hidden="true"
-        />
+      <div role="status" aria-live="polite" className="flex flex-col gap-2">
+        <span className="sr-only">Cargando ofertas…</span>
+        <Skeleton className="h-12 w-full rounded-none" />
+        <Skeleton className="h-12 w-full rounded-none" />
+        <Skeleton className="h-12 w-full rounded-none" />
+        <Skeleton className="h-12 w-full rounded-none" />
       </div>
     );
   }
@@ -212,11 +282,12 @@ function OfferingBrowser({ simulationId, periodId, programIds }: OfferingBrowser
   }
 
   // Merge offerings from all programs; dedupe by offering id
+  const selectedIds = new Set(selectedOfferingIds);
   const seen = new Set<string>();
   const offerings: Offering[] = [];
   for (const result of results) {
-    for (const offering of (result.data?.content ?? [])) {
-      if (!seen.has(offering.id)) {
+    for (const offering of (result.data ?? [])) {
+      if (!seen.has(offering.id) && !selectedIds.has(offering.id)) {
         seen.add(offering.id);
         offerings.push(offering);
       }
@@ -226,21 +297,35 @@ function OfferingBrowser({ simulationId, periodId, programIds }: OfferingBrowser
   if (offerings.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-4 text-center">
-        No hay ofertas publicadas para este período y programa.
+        No hay ofertas disponibles para agregar en este período y programa.
       </p>
     );
   }
 
+  const semesterGroups = groupOfferingsBySemester(offerings);
+
   return (
-    <ul className="flex flex-col gap-2">
-      {offerings.map((offering) => (
-        <OfferingRow
-          key={offering.id}
-          simulationId={simulationId}
-          offering={offering}
-        />
+    <div className="flex flex-col gap-4">
+      {semesterGroups.map((group) => (
+        <section key={group.semester ?? "unknown"} aria-labelledby={`semester-${group.semester ?? "unknown"}-heading`}>
+          <h3
+            id={`semester-${group.semester ?? "unknown"}-heading`}
+            className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide"
+          >
+            {group.semester ? `Semestre ${group.semester}` : "Semestre no definido"}
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {group.offerings.map((offering) => (
+              <OfferingRow
+                key={offering.id}
+                simulationId={simulationId}
+                offering={offering}
+              />
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 }
 

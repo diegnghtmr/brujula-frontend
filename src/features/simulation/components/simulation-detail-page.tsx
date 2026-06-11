@@ -24,7 +24,7 @@ import { CreditSummaryPanel } from "./credit-summary-panel";
 import { ValidationNoticeList } from "./validation-notice-list";
 import { OfferingBrowser } from "./offering-browser";
 import { SelectionRow } from "./selection-row";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Simulation } from "@/api/generated/models/simulation";
 import type { SimulationSelection } from "@/api/generated/models/simulation-selection";
 import type { ProgramCreditSummary } from "@/api/generated/models/program-credit-summary";
@@ -64,15 +64,23 @@ function SimulationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12" role="status">
-        <span className="sr-only">Cargando simulación...</span>
-        <div
-          className={cn(
-            "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-            "border-muted border-t-primary"
-          )}
-          aria-hidden="true"
-        />
+      <div className="p-6 max-w-5xl mx-auto" role="status" aria-live="polite">
+        <span className="sr-only">Cargando simulación…</span>
+        {/* Header skeleton */}
+        <div className="mb-6 flex flex-col gap-2">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+        {/* Main grid skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <Skeleton className="h-48 w-full rounded-none" />
+            <Skeleton className="h-32 w-full rounded-none" />
+          </div>
+          <div className="flex flex-col gap-6">
+            <Skeleton className="h-40 w-full rounded-none" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -166,6 +174,7 @@ function SimulationDetailPage() {
               simulationId={simulationId!}
               periodId={detail.periodId}
               programIds={detail.programIds}
+              selectedOfferingIds={(detail.selections ?? []).map((selection) => selection.offeringId)}
             />
           </section>
         </div>

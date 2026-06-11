@@ -13,6 +13,7 @@ import { useNavigate } from "react-router";
 import { useSimulations } from "@/features/simulation/hooks/use-simulations";
 import { useDeleteSimulation } from "@/features/simulation/hooks/use-delete-simulation";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SimulationStatusBadge } from "./simulation-status-badge";
 import { cn } from "@/lib/utils";
 import type { AxiosError } from "@/api/client";
@@ -204,15 +205,11 @@ function SimulationListPage() {
       </header>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando simulaciones...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex flex-col gap-3">
+          <span className="sr-only">Cargando simulaciones…</span>
+          <Skeleton className="h-20 w-full rounded-none" />
+          <Skeleton className="h-20 w-full rounded-none" />
+          <Skeleton className="h-20 w-full rounded-none" />
         </div>
       )}
 

@@ -21,6 +21,7 @@ import type { AxiosError } from "@/api/client";
 import type { Subscription } from "@/api/generated/models/subscription";
 import { useDeleteSubscription } from "@/features/progress/hooks/use-delete-subscription";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
@@ -246,15 +247,10 @@ function SubscriptionListPage() {
       </header>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando suscripciones...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex flex-col gap-4">
+          <span className="sr-only">Cargando suscripciones…</span>
+          <Skeleton className="h-28 w-full rounded-none" />
+          <Skeleton className="h-28 w-full rounded-none" />
         </div>
       )}
 

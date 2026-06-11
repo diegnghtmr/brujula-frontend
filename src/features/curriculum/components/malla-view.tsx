@@ -19,6 +19,7 @@ import { CurriculumApi } from "@/api/generated/api/curriculum-api";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SemesterColumn } from "./semester-column";
 import { cn } from "@/lib/utils";
 
@@ -130,15 +131,14 @@ function MallaView() {
 
       {/* Malla grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16" role="status">
-          <span className="sr-only">Cargando malla curricular...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex gap-4 overflow-x-auto pb-4">
+          <span className="sr-only">Cargando malla curricular…</span>
+          {/* Simulate semester columns */}
+          <Skeleton className="h-96 w-48 shrink-0 rounded-none" />
+          <Skeleton className="h-96 w-48 shrink-0 rounded-none" />
+          <Skeleton className="h-96 w-48 shrink-0 rounded-none" />
+          <Skeleton className="h-96 w-48 shrink-0 rounded-none" />
+          <Skeleton className="h-96 w-48 shrink-0 rounded-none" />
         </div>
       ) : isError || !malla ? (
         <p className="text-sm text-muted-foreground py-8 text-center">

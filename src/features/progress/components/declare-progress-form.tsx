@@ -30,6 +30,7 @@ import type { AxiosError } from "@/api/client";
 import type { CurriculumCourse } from "@/api/generated/models/curriculum-course";
 import { AttemptStatus } from "@/api/generated/models/attempt-status";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CourseStatusBadge } from "./course-status-badge";
 import { cn } from "@/lib/utils";
 
@@ -400,15 +401,20 @@ function DeclareProgressForm() {
       </header>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando malla curricular...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex flex-col gap-6">
+          <span className="sr-only">Cargando malla curricular…</span>
+          {/* Simulate semester sections */}
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-12 w-full rounded-none" />
+            <Skeleton className="h-12 w-full rounded-none" />
+            <Skeleton className="h-12 w-full rounded-none" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-12 w-full rounded-none" />
+            <Skeleton className="h-12 w-full rounded-none" />
+          </div>
         </div>
       )}
 

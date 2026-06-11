@@ -14,8 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import { CatalogApi } from "@/api/generated/api/catalog-api";
 import { createApiInstance } from "@/api/client";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { JourneyBadge } from "./journey-badge";
-import { cn } from "@/lib/utils";
 
 const catalogApi = createApiInstance(CatalogApi);
 
@@ -69,15 +69,16 @@ function StudyPlanPage() {
       <BackLink to="/catalog/programs" />
 
       {isLoading && (
-        <div className="flex items-center justify-center py-16" role="status">
-          <span className="sr-only">Cargando plan de estudios...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="mt-2 flex flex-col gap-3">
+          <span className="sr-only">Cargando plan de estudios…</span>
+          {/* Header: title bar + status badge */}
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-1/3" />
+          {/* Journey badges row */}
+          <div className="flex gap-2 mt-2">
+            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-6 w-20" />
+          </div>
         </div>
       )}
 

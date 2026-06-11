@@ -259,6 +259,124 @@ describe("OfferingBrowser", () => {
     expect(await screen.findByText("Álgebra Lineal")).toBeInTheDocument();
   });
 
+  it("aggregates all offering pages for each simulation program", async () => {
+    const firstPage = {
+      content: [
+        {
+          id: "off-page-1",
+          courseId: "course-page-1",
+          courseName: "Arquitectura de Software",
+          programId: PROGRAM_ID,
+          periodId: PERIOD_ID,
+          status: "FINAL",
+          notes: "source sheet: Catálogo Diurna; level 8",
+          version: 1,
+        },
+      ],
+      totalElements: 2,
+      totalPages: 2,
+      size: 1,
+      page: 0,
+    };
+    const secondPage = {
+      content: [
+        {
+          id: "off-page-2",
+          courseId: "course-page-2",
+          courseName: "Compiladores",
+          programId: PROGRAM_ID,
+          periodId: PERIOD_ID,
+          status: "FINAL",
+          notes: "source sheet: Catálogo Nocturna; level 9",
+          version: 1,
+        },
+      ],
+      totalElements: 2,
+      totalPages: 2,
+      size: 1,
+      page: 1,
+    };
+
+    server.use(
+      http.get("/api/v1/offerings", ({ request }) => {
+        const url = new URL(request.url);
+        return HttpResponse.json(url.searchParams.get("page") === "1" ? secondPage : firstPage);
+      })
+    );
+
+    render(
+      <OfferingBrowser
+        simulationId={SIMULATION_ID}
+        periodId={PERIOD_ID}
+        programIds={[PROGRAM_ID]}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    expect(await screen.findByText("Arquitectura de Software")).toBeInTheDocument();
+    expect(await screen.findByText("Compiladores")).toBeInTheDocument();
+  });
+
+  it("groups offerings by semester, orders groups, and hides selected offerings", async () => {
+    const groupedOfferings = {
+      content: [
+        {
+          id: "off-selected",
+          courseId: "course-selected",
+          courseName: "Debe desaparecer",
+          programId: PROGRAM_ID,
+          periodId: PERIOD_ID,
+          status: "FINAL",
+          notes: "source sheet: Catálogo Diurna; level 1",
+          version: 1,
+        },
+        {
+          id: "off-sem-3",
+          courseId: "course-sem-3",
+          courseName: "Estructuras de Datos",
+          programId: PROGRAM_ID,
+          periodId: PERIOD_ID,
+          status: "FINAL",
+          notes: "source sheet: Catálogo Diurna; level 3",
+          version: 1,
+        },
+        {
+          id: "off-sem-1",
+          courseId: "course-sem-1",
+          courseName: "Lógica de Programación",
+          programId: PROGRAM_ID,
+          periodId: PERIOD_ID,
+          status: "FINAL",
+          notes: "source sheet: Catálogo Nocturna; level 1",
+          version: 1,
+        },
+      ],
+      totalElements: 3,
+      totalPages: 1,
+      size: 20,
+      page: 0,
+    };
+
+    server.use(http.get("/api/v1/offerings", () => HttpResponse.json(groupedOfferings)));
+
+    render(
+      <OfferingBrowser
+        simulationId={SIMULATION_ID}
+        periodId={PERIOD_ID}
+        programIds={[PROGRAM_ID]}
+        selectedOfferingIds={["off-selected"]}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    const semesterOne = await screen.findByText("Semestre 1");
+    const semesterThree = await screen.findByText("Semestre 3");
+    expect(semesterOne.compareDocumentPosition(semesterThree)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByText("Lógica de Programación")).toBeInTheDocument();
+    expect(screen.getByText("Estructuras de Datos")).toBeInTheDocument();
+    expect(screen.queryByText("Debe desaparecer")).not.toBeInTheDocument();
+  });
+
   it("409 blocking error from addSelection shown in UI", async () => {
     server.use(
       http.get("/api/v1/offerings", () => HttpResponse.json(OFFERINGS_FIXTURE)),

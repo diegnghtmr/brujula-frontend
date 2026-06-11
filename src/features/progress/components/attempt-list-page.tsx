@@ -29,6 +29,7 @@ import { useCourseAttempts } from "@/features/progress/hooks/use-course-attempts
 import { useUpdateCourseAttempt } from "@/features/progress/hooks/use-update-course-attempt";
 import { useDeleteCourseAttempt } from "@/features/progress/hooks/use-delete-course-attempt";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const offeringsApi = createApiInstance(OfferingsApi);
@@ -536,15 +537,13 @@ function AttemptListPage() {
       </header>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-12" role="status">
-          <span className="sr-only">Cargando historial de intentos...</span>
-          <div
-            className={cn(
-              "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-              "border-muted border-t-primary"
-            )}
-            aria-hidden="true"
-          />
+        <div role="status" aria-live="polite" className="flex flex-col gap-3">
+          <span className="sr-only">Cargando historial de intentos…</span>
+          <Skeleton className="h-16 w-full rounded-none" />
+          <Skeleton className="h-16 w-full rounded-none" />
+          <Skeleton className="h-16 w-full rounded-none" />
+          <Skeleton className="h-16 w-full rounded-none" />
+          <Skeleton className="h-16 w-full rounded-none" />
         </div>
       )}
 

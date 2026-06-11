@@ -6,7 +6,7 @@
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ROLE_LABELS: Record<string, string> = {
   STUDENT: "Estudiante",
@@ -24,14 +24,12 @@ function UserProfileCard() {
           <CardTitle className="text-base text-foreground">Mi perfil</CardTitle>
         </CardHeader>
         <CardContent>
-          <div
-            className={cn(
-              "h-4 w-48 rounded animate-pulse",
-              "bg-muted"
-            )}
-            aria-label="Cargando perfil..."
-            role="status"
-          />
+          <div role="status" aria-live="polite" className="flex flex-col gap-2">
+            <span className="sr-only">Cargando perfil…</span>
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-5 w-20" />
+          </div>
         </CardContent>
       </Card>
     );

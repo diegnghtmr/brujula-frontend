@@ -22,6 +22,7 @@ import { RequireRole } from "@/features/auth/components/require-role";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { BackLink } from "@/components/layout/back-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Staff } from "@/api/generated/models/staff";
 
@@ -246,15 +247,14 @@ function StaffAdminContent() {
       {/* Staff list */}
       <section aria-label="Lista de staff">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8" role="status">
-            <span className="sr-only">Cargando staff...</span>
-            <div
-              className={cn(
-                "w-6 h-6 border-4 rounded-full motion-safe:animate-spin",
-                "border-muted border-t-primary"
-              )}
-              aria-hidden="true"
-            />
+          <div role="status" aria-live="polite" className="flex flex-col gap-0">
+            <span className="sr-only">Cargando staff…</span>
+            {/* Table header skeleton */}
+            <Skeleton className="h-9 w-full rounded-none" />
+            {/* Table row skeletons */}
+            <Skeleton className="h-11 w-full rounded-none mt-px" />
+            <Skeleton className="h-11 w-full rounded-none mt-px" />
+            <Skeleton className="h-11 w-full rounded-none mt-px" />
           </div>
         ) : staffList.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">
