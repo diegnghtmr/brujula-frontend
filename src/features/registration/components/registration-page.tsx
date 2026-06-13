@@ -20,6 +20,7 @@ import { createApiInstance } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { AxiosError } from "@/api/client";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const authApi = createApiInstance(AuthApi);
 
@@ -85,10 +86,9 @@ function RegistrationPage() {
       setErrorMessage(null);
     },
     onError: (error: AxiosError<ProblemDetail>) => {
-      const detail =
-        error.response?.data?.detail ??
-        "Ocurrió un error al registrarse. Intentá de nuevo.";
-      setErrorMessage(detail);
+      setErrorMessage(
+        getApiErrorMessage(error, "Ocurrió un error al registrarse. Intentá de nuevo.")
+      );
       setSuccessMessage(null);
     },
   });
