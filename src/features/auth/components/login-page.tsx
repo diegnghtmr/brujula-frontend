@@ -31,7 +31,7 @@ function LoginPage() {
             Brújula
           </h1>
           <p className="text-sm text-muted-foreground">
-            Planificador curricular — Universidad del Quindío
+            Planificador curricular de la Universidad del Quindío
           </p>
         </header>
 
@@ -46,7 +46,7 @@ function LoginPage() {
         </section>
 
         <nav
-          className="flex flex-col items-center gap-2 text-sm"
+          className="w-full flex flex-col items-center gap-2 text-sm"
           aria-label="Accesos rápidos"
         >
           <Button asChild variant="outline" size="lg" className="w-full">
