@@ -15,8 +15,9 @@
  * React Compiler is ON: no useMemo/useCallback.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { sanitizeGradeText } from "./grade-input.utils";
 
 interface GradeInputProps {
   id?: string;
@@ -29,22 +30,6 @@ interface GradeInputProps {
 }
 
 const MAX_GRADE = 5;
-const MAX_DECIMALS = 2;
-
-/** Keep digits + a single decimal point, capped at MAX_DECIMALS decimals.
- * Also strips leading zeros in the integer part when followed by another digit
- * (e.g. "05" → "5"), but preserves "0" and "0.x". */
-function sanitizeGradeText(raw: string): string {
-  const onlyValid = raw.replace(/[^0-9.]/g, "");
-  const firstDot = onlyValid.indexOf(".");
-  if (firstDot === -1) {
-    // No decimal: strip leading zero before another digit (e.g. "05" → "5")
-    return onlyValid.replace(/^0(\d)/, "$1");
-  }
-  const intPartRaw = onlyValid.slice(0, firstDot).replace(/^0(\d)/, "$1");
-  const decPart = onlyValid.slice(firstDot + 1).replace(/\./g, "").slice(0, MAX_DECIMALS);
-  return `${intPartRaw}.${decPart}`;
-}
 
 function initialText(value: number | null): string {
   return value === null || value === undefined ? "" : String(value);
@@ -55,11 +40,15 @@ function GradeInput({ id, value, onChange, onBlur, hasError }: GradeInputProps) 
   // so an in-progress "4." survives across renders.
   const [text, setText] = useState<string>(() => initialText(value));
 
-  // Sync display when the form value is reset/cleared externally.
-  // The component is the source of truth WHILE typing, so only re-sync on an external null (clear/reset).
-  useEffect(() => {
+  // Sync display when the form value is reset/cleared externally, using React's
+  // "adjust state during render" pattern (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
+  // This avoids a setState-in-effect cascade. The component is the source of truth
+  // WHILE typing, so we only re-sync the display on an external clear (value → null).
+  const [lastValue, setLastValue] = useState<number | null>(value);
+  if (value !== lastValue) {
+    setLastValue(value);
     if (value === null || value === undefined) setText("");
-  }, [value]);
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const next = sanitizeGradeText(e.target.value);
@@ -98,5 +87,5 @@ function GradeInput({ id, value, onChange, onBlur, hasError }: GradeInputProps) 
   );
 }
 
-export { GradeInput, sanitizeGradeText };
+export { GradeInput };
 export type { GradeInputProps };

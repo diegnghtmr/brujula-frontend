@@ -288,10 +288,10 @@ function CourseRow({ simulationId, group, selectedJourneys }: {
         "border rounded-none bg-card border-border",
         isPassed && "opacity-60"
       )}
-      aria-disabled={isPassed ? "true" : undefined}
     >
       <button
         type="button"
+        aria-disabled={isPassed ? "true" : undefined}
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
         aria-label={group.courseName}

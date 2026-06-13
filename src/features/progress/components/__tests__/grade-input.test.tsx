@@ -6,7 +6,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
-import { GradeInput, sanitizeGradeText } from "../grade-input";
+import { GradeInput } from "../grade-input";
+import { sanitizeGradeText } from "../grade-input.utils";
 
 // A tiny controlled harness mirroring how react-hook-form drives the field.
 function Harness({ onValue }: { onValue?: (v: number | null) => void }) {

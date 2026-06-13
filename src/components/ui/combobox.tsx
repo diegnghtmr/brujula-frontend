@@ -222,6 +222,7 @@ function Combobox({
             </li>
           ) : (
             filteredOptions.map((opt, idx) => (
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events -- options are not individually focusable; keyboard is handled at the input via aria-activedescendant (ARIA combobox pattern)
               <li
                 key={opt.value}
                 id={`${uid}-opt-${idx}`}
