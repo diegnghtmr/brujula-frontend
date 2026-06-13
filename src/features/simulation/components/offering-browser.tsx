@@ -139,7 +139,6 @@ function BlockedReasons({ reasons }: { reasons: string[] }) {
 
 const ELIGIBILITY_BADGE_CONFIG = {
   passed: {
-    icon: "✓",
     label: "Ya cursada",
     className: "bg-success-subtle text-success-subtle-foreground border-transparent",
   },
@@ -157,7 +156,6 @@ function EligibilityBadge({ status }: { status: EligibilityVerdict["status"] }) 
         config.className
       )}
     >
-      <span aria-hidden="true">{config.icon}</span>
       {config.label}
     </span>
   );

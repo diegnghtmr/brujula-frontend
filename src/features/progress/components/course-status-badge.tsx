@@ -1,16 +1,16 @@
 /**
  * CourseStatusBadge — WCAG 2.2 AA component for CourseProgressStatus.
  *
- * Accessibility rule (CROSS-5): every status is conveyed by COLOR + ICON + TEXT LABEL.
- * Color alone is never the sole signal.
+ * Accessibility rule (CROSS-5): every status is conveyed by COLOR + TEXT LABEL.
+ * Color alone is never the sole signal. Text label is always present.
  *
  * Status mapping:
- *   PENDING   → grey   / hourglass icon / "Pendiente"
- *   PASSED    → green  / check icon     / "Aprobada"
- *   FAILED    → red    / x icon         / "Reprobada"
- *   CANCELLED → orange / slash icon     / "Cancelada"
- *   AVAILABLE → blue   / unlock icon    / "Disponible"
- *   BLOCKED   → dark-grey / lock icon   / "Bloqueada"
+ *   PENDING   → grey        / "Pendiente"
+ *   PASSED    → green       / "Aprobada"
+ *   FAILED    → red         / "Reprobada"
+ *   CANCELLED → orange      / "Cancelada"
+ *   AVAILABLE → blue        / "Disponible"
+ *   BLOCKED   → dark-grey   / "Bloqueada"
  *
  * Advisory "[Recomendado]" chip shown on AVAILABLE courses with soft unmet prerequisites.
  */
@@ -21,56 +21,47 @@ import { cn } from "@/lib/utils";
 const STATUS_CONFIG = {
   PENDING: {
     label: "Pendiente",
-    textIcon: "○",
     // §6.3: pendiente → muted (neutral, no cursada)
     className: "bg-muted text-muted-foreground border-transparent",
   },
   PASSED: {
     label: "Aprobada",
-    textIcon: "✓",
     // §6.3: aprobada → success-subtle
     className: "bg-success-subtle text-success-subtle-foreground border-transparent",
   },
   FAILED: {
     label: "Reprobada",
-    textIcon: "✕",
     // §6.3: reprobada → destructive-subtle
     className: "bg-destructive-subtle text-destructive-subtle-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelada",
-    textIcon: "—",
     // §6.3: cancelada → warning-subtle
     className: "bg-warning-subtle text-warning-subtle-foreground border-transparent",
   },
   AVAILABLE: {
     label: "Disponible",
-    textIcon: "🔓",
     // §6.3: habilitada → outline (border-success, bg-background)
     className: "border-success bg-background text-success-subtle-foreground",
   },
   BLOCKED: {
     label: "Bloqueada",
-    textIcon: "🔒",
     // §6.3: bloqueada → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
   // Additional statuses that may come from the API
   IN_PROGRESS: {
     label: "En curso",
-    textIcon: "◷",
     // §6.3: en-curso → info-subtle
     className: "bg-info-subtle text-info-subtle-foreground border-transparent",
   },
   PLANNED: {
     label: "Pendiente",
-    textIcon: "○",
     // §6.3: pendiente → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
   NOT_TAKEN: {
     label: "Pendiente",
-    textIcon: "○",
     // §6.3: pendiente → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
@@ -95,7 +86,7 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
 
   return (
     <span className="inline-flex items-center gap-1.5 flex-wrap">
-      {/* Primary status badge: color + icon + label */}
+      {/* Primary status badge: color + text label */}
       <span
         className={cn(
           "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border",
@@ -103,8 +94,6 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         )}
         aria-label={`Estado: ${config.label}`}
       >
-        {/* Icon — text-based for color-blind accessibility */}
-        <span aria-hidden="true">{config.textIcon}</span>
         {/* Visible text label — REQUIRED for WCAG AA */}
         {config.label}
       </span>
@@ -119,7 +108,6 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
           )}
           title={`Prerrequisito(s) recomendado(s): ${unmetRequirements?.join(", ")}`}
         >
-          <span aria-hidden="true">▲</span>
           [Recomendado]
         </span>
       )}
@@ -140,7 +128,6 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
           aria-label={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
           title={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}
         >
-          <span aria-hidden="true">⛔</span>
           <span>
             {"Falta: "}
             {unmetRequirements?.join(", ")}

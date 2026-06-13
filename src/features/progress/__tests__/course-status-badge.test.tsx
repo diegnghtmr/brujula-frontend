@@ -19,47 +19,34 @@ import { CourseStatusBadge } from "@/features/progress/components/course-status-
 import { CourseProgressStatus } from "@/api/generated/models/course-progress-status";
 
 describe("CourseStatusBadge (CROSS-5-RENDER)", () => {
-  it("renders PENDING with visible text label and icon", () => {
+  it("renders PENDING with visible text label", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Pending} />);
     expect(screen.getByText("Pendiente")).toBeInTheDocument();
-    // Icon must be present (aria-hidden span)
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
-  it("renders PASSED with visible text label 'Aprobada' and icon", () => {
+  it("renders PASSED with visible text label 'Aprobada'", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Passed} />);
     expect(screen.getByText("Aprobada")).toBeInTheDocument();
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
-  it("renders FAILED with visible text label 'Reprobada' and icon", () => {
+  it("renders FAILED with visible text label 'Reprobada'", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Failed} />);
     expect(screen.getByText("Reprobada")).toBeInTheDocument();
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
-  it("renders CANCELLED with visible text label 'Cancelada' and icon", () => {
+  it("renders CANCELLED with visible text label 'Cancelada'", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Cancelled} />);
     expect(screen.getByText("Cancelada")).toBeInTheDocument();
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
-  it("renders AVAILABLE with visible text label 'Disponible' and icon", () => {
+  it("renders AVAILABLE with visible text label 'Disponible'", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Available} />);
     expect(screen.getByText("Disponible")).toBeInTheDocument();
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
-  it("renders BLOCKED with visible text label 'Bloqueada' and icon", () => {
+  it("renders BLOCKED with visible text label 'Bloqueada'", () => {
     render(<CourseStatusBadge status={CourseProgressStatus.Blocked} />);
     expect(screen.getByText("Bloqueada")).toBeInTheDocument();
-    const icons = document.querySelectorAll("[aria-hidden='true']");
-    expect(icons.length).toBeGreaterThan(0);
   });
 
   it("shows [Recomendado] advisory chip when unmetRequirements present on AVAILABLE", () => {
@@ -204,5 +191,43 @@ describe("CourseStatusBadge — axe zero-violations (T-WU6.8)", () => {
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+/**
+ * Glyph-removal guards (Change 3).
+ *
+ * Icons are removed from status badges. Text labels must remain intact
+ * (WCAG: text alone is sufficient since aria-label on the wrapper conveys state).
+ */
+describe("CourseStatusBadge — text labels present after icon removal", () => {
+  it("AVAILABLE badge still renders text label 'Disponible'", () => {
+    render(<CourseStatusBadge status={CourseProgressStatus.Available} />);
+    expect(screen.getByText("Disponible")).toBeInTheDocument();
+  });
+
+  it("BLOCKED badge still renders text label 'Bloqueada'", () => {
+    render(<CourseStatusBadge status={CourseProgressStatus.Blocked} />);
+    expect(screen.getByText("Bloqueada")).toBeInTheDocument();
+  });
+
+  it("blocking-reason chip still renders 'Falta:' text label and prerequisite names", () => {
+    render(
+      <CourseStatusBadge
+        status={CourseProgressStatus.Blocked}
+        unmetRequirements={["Cálculo I"]}
+      />
+    );
+    expect(screen.getByText(/Falta:/)).toBeInTheDocument();
+    expect(screen.getByText(/Cálculo I/)).toBeInTheDocument();
+  });
+
+  it("primary badge has no aria-hidden icon spans after glyph removal", () => {
+    const { container } = render(
+      <CourseStatusBadge status={CourseProgressStatus.Available} />
+    );
+    const badge = container.querySelector("[aria-label^='Estado:']");
+    const iconSpans = badge?.querySelectorAll("[aria-hidden='true']") ?? [];
+    expect(iconSpans.length).toBe(0);
   });
 });
