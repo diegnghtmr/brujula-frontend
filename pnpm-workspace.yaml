@@ -1,5 +1,7 @@
+# Dependencies whose build/postinstall scripts are allowed to run.
+# pnpm 10+ blocks build scripts by default; these are required by the toolchain.
 allowBuilds:
-  '@nestjs/core': set this to true or false
-  '@openapitools/openapi-generator-cli': set this to true or false
-  esbuild: set this to true or false
-  msw: set this to true or false
+  '@nestjs/core': true
+  '@openapitools/openapi-generator-cli': true
+  esbuild: true
+  msw: true

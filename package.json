@@ -66,13 +66,5 @@
     "vite": "^8.0.12",
     "vitest": "^3.2.3",
     "vitest-axe": "^0.1.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@nestjs/core",
-      "@openapitools/openapi-generator-cli",
-      "esbuild",
-      "msw"
-    ]
   }
 }
