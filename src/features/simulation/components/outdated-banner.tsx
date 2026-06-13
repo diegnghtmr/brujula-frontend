@@ -9,9 +9,9 @@
 
 import { useState } from "react";
 import type { SimulationStatus } from "@/api/generated/models/simulation-status";
-import type { AxiosError } from "@/api/client";
 import { useReviewSimulation } from "@/features/simulation/hooks/use-review-simulation";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 interface OutdatedBannerProps {
   simulationId: string;
@@ -35,22 +35,9 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
         onReviewSuccess();
       },
       onError: (error: Error) => {
-        const axiosError = error as AxiosError;
-        const status = axiosError.response?.status;
-        const data = axiosError.response?.data as {
-          detail?: string;
-          code?: string;
-          message?: string;
-        } | undefined;
-
-        if (status === 409) {
-          setBlockersError(
-            data?.detail ??
-              "La simulación aún tiene conflictos o bloqueos activos. Revisá las opciones seleccionadas."
-          );
-        } else {
-          setBlockersError("Error al revisar la simulación. Intentá nuevamente.");
-        }
+        setBlockersError(
+          getApiErrorMessage(error, "Error al revisar la simulación. Intentá nuevamente.")
+        );
       },
     });
   }

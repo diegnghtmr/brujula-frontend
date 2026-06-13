@@ -16,8 +16,8 @@ import { BackLink } from "@/components/layout/back-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SimulationStatusBadge } from "./simulation-status-badge";
 import { cn } from "@/lib/utils";
-import type { AxiosError } from "@/api/client";
 import type { Simulation } from "@/api/generated/models/simulation";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 // ---------------------------------------------------------------------------
 // SimulationCard — with inline delete confirmation (mirrors SubscriptionCard)
@@ -43,12 +43,8 @@ function SimulationCard({ sim }: SimulationCardProps) {
           setConfirmDelete(false);
         },
         onError: (error: unknown) => {
-          const axiosError = error as AxiosError;
-          const detail = (
-            axiosError.response?.data as { detail?: string } | undefined
-          )?.detail;
           setDeleteError(
-            detail ?? "No se pudo eliminar la simulación. Intentá nuevamente."
+            getApiErrorMessage(error, "No se pudo eliminar la simulación. Intentá nuevamente.")
           );
           setConfirmDelete(false);
         },

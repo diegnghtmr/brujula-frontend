@@ -5,9 +5,10 @@
  *
  * Flow:
  * 1. GET /periods → populate period dropdown (real periodId from data, not hardcoded)
- * 2. GET /me/subscriptions → populate programIds checkboxes (student's programs)
- * 3. RHF+Zod: name 1-120, periodId required, programIds 1-2 unique (no hardcoded values)
- * 4. Submit → POST /me/simulations with Idempotency-Key uuidv4
+ * 2. GET /me/subscriptions → populate subscription checkboxes (student's programs × jornadas)
+ * 3. RHF+Zod: name 1-120, periodId required, subscriptionIds min 1, max 4,
+ *    and at most 2 distinct programIds across selected subscriptions.
+ * 4. Submit → POST /me/simulations with Idempotency-Key uuidv4, body has selections: SimulationScopeEntry[]
  * 5. 201 → navigate to /simulations/:id
  * 6. 422/400 → inline error shown
  *
@@ -24,30 +25,47 @@ import { useNavigate } from "react-router";
 import { OfferingsApi } from "@/api/generated/api/offerings-api";
 import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
-import type { AxiosError } from "@/api/client";
+import type { Subscription } from "@/api/generated/models/subscription";
 import { useCreateSimulation } from "@/features/simulation/hooks/use-create-simulation";
 import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const offeringsApi = createApiInstance(OfferingsApi);
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
 
-const createSimulationSchema = z.object({
-  name: z
-    .string()
-    .min(1, { message: "El nombre es requerido." })
-    .max(120, { message: "El nombre no puede exceder 120 caracteres." }),
-  periodId: z.string().min(1, { message: "Seleccioná un período académico." }),
-  programIds: z
-    .array(z.string())
-    .min(1, { message: "Seleccioná al menos un programa." })
-    .max(2, { message: "Máximo 2 programas permitidos." })
-    .refine((ids) => new Set(ids).size === ids.length, {
-      message: "Los programas deben ser únicos.",
-    }),
-});
+/**
+ * Build the Zod schema dynamically so the refine for distinct programs
+ * can resolve programId from subscription data.
+ */
+function buildSchema(subs: Subscription[]) {
+  return z.object({
+    name: z
+      .string()
+      .min(1, { message: "El nombre es requerido." })
+      .max(120, { message: "El nombre no puede exceder 120 caracteres." }),
+    periodId: z.string().min(1, { message: "Seleccioná un período académico." }),
+    subscriptionIds: z
+      .array(z.string())
+      .min(1, { message: "Seleccioná al menos una opción." })
+      .max(4, { message: "Podés seleccionar hasta 4 combinaciones." })
+      .refine(
+        (ids) => {
+          const programIds = ids
+            .map((id) => subs.find((s) => s.id === id)?.programId)
+            .filter((p): p is string => Boolean(p));
+          return new Set(programIds).size <= 2;
+        },
+        { message: "Máximo 2 programas distintos permitidos." }
+      ),
+  });
+}
 
-type CreateSimulationFormData = z.infer<typeof createSimulationSchema>;
+type CreateSimulationFormData = {
+  name: string;
+  periodId: string;
+  subscriptionIds: string[];
+};
 
 function SimulationCreateForm() {
   const navigate = useNavigate();
@@ -59,7 +77,7 @@ function SimulationCreateForm() {
     queryFn: () => offeringsApi.listPeriods({}).then((r) => r.data),
   });
 
-  // Load student subscriptions — programId values come from data, not hardcoded
+  // Load student subscriptions — subscription id, programId, and referenceJourney come from data
   const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
     queryKey: ["subscriptions"],
     queryFn: () => subscriptionsApi.listMySubscriptions().then((r) => r.data),
@@ -67,36 +85,41 @@ function SimulationCreateForm() {
 
   const createMutation = useCreateSimulation();
 
+  const schema = buildSchema(subscriptions ?? []);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<CreateSimulationFormData>({
-    resolver: zodResolver(createSimulationSchema),
-    defaultValues: { name: "", periodId: "", programIds: [] },
+    resolver: zodResolver(schema),
+    defaultValues: { name: "", periodId: "", subscriptionIds: [] },
   });
 
   function onSubmit(data: CreateSimulationFormData) {
     setApiError(null);
+    const selections = data.subscriptionIds
+      .map((id) => (subscriptions ?? []).find((s) => s.id === id))
+      .filter((sub): sub is Subscription => Boolean(sub))
+      .map((sub) => ({ programId: sub.programId, journeyCode: sub.referenceJourney.code }));
+    if (selections.length === 0) {
+      setApiError("Tus suscripciones cambiaron. Recargá la página e intentá de nuevo.");
+      return;
+    }
     createMutation.mutate(
       {
         name: data.name,
         periodId: data.periodId,
-        programIds: new Set(data.programIds),
+        selections,
       },
       {
         onSuccess: (simulation) => {
           navigate(`/simulations/${simulation.id}`);
         },
         onError: (error: Error) => {
-          const axiosError = error as AxiosError;
-          const status = axiosError.response?.status;
-          const detail = (axiosError.response?.data as { detail?: string } | undefined)?.detail;
-          if (status === 422 || status === 400) {
-            setApiError(detail ?? "Los datos del formulario no son válidos.");
-          } else {
-            setApiError("Error al crear la simulación. Intentá nuevamente.");
-          }
+          setApiError(
+            getApiErrorMessage(error, "Error al crear la simulación. Intentá nuevamente.")
+          );
         },
       }
     );
@@ -196,29 +219,29 @@ function SimulationCreateForm() {
             )}
           </div>
 
-          {/* Program checkboxes — values come from subscriptions, not hardcoded */}
+          {/* Subscription checkboxes — each row = program × jornada */}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium text-foreground">
-              Programas (máx. 2)
+              Programas y jornadas (máx. 2 programas)
             </span>
             <div className="flex flex-col gap-1">
               {(subscriptions ?? []).map((sub) => (
                 <label
-                  key={sub.programId}
+                  key={sub.id}
                   className="flex items-center gap-2 text-sm text-foreground cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    value={sub.programId}
-                    {...register("programIds")}
+                    value={sub.id}
+                    {...register("subscriptionIds")}
                     className="rounded border-border"
                   />
-                  {sub.programName}
+                  {sub.programName} · {sub.referenceJourney.name}
                 </label>
               ))}
             </div>
-            {errors.programIds && (
-              <p className="text-xs text-destructive">{errors.programIds.message}</p>
+            {errors.subscriptionIds && (
+              <p className="text-xs text-destructive">{errors.subscriptionIds.message}</p>
             )}
           </div>
 
