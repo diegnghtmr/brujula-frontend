@@ -251,12 +251,15 @@ paths:
       operationId: listMySubscriptions
       responses:
         "200":
-          description: Suscripciones activas (entre 1 y 2).
+          description: |
+            Suscripciones activas del estudiante. Máximo 2 programas/carreras distintos; dentro de
+            cada programa se permiten ambas jornadas (diurna y nocturna), por lo que el máximo de
+            filas activas es 4 (2 programas × 2 jornadas).
           content:
             application/json:
               schema:
                 type: array
-                maxItems: 2
+                maxItems: 4
                 items: { $ref: "#/components/schemas/Subscription" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
@@ -264,8 +267,14 @@ paths:
       summary: Suscribirse a un programa
       description: |
         Asocia el estudiante a un programa, un plan activo y una jornada de
-        referencia. Máximo dos suscripciones activas; el tercer programa se
-        rechaza con `409`.
+        referencia. Máximo 2 programas/carreras distintos activos; el intento de
+        agregar un tercer programa distinto se rechaza con `409`.
+
+        Dentro de un mismo programa se permiten ambas jornadas (diurna y nocturna)
+        como suscripciones independientes. El duplicado se evalúa por la combinación
+        programa + jornada: suscribirse al mismo programa con la misma jornada que ya
+        existe es rechazado con `409`; suscribirse al mismo programa con una jornada
+        diferente es permitido y no cuenta contra el límite de programas.
       operationId: createSubscription
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -287,11 +296,26 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: Límite de 2 suscripciones superado, programa ya suscrito, o reuso inválido de `Idempotency-Key`.
+          description: |
+            Límite de 2 programas distintos superado, combinación programa+jornada ya
+            suscrita, o reuso inválido de `Idempotency-Key`.
+
+            El campo `code` identifica el motivo exacto:
+            - `SUBSCRIPTION_PROGRAM_LIMIT_EXCEEDED` — tercer programa distinto superado (cap=2).
+            - `SUBSCRIPTION_DUPLICATE_JORNADA` — combinación programa+jornada ya existe.
+            - `IDEMPOTENCY_KEY_CONFLICT` — `Idempotency-Key` reutilizada con cuerpo distinto.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetail" }
-        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "422":
+          description: |
+            Error semántico que impide crear la suscripción.
+
+            El campo `code` identifica el motivo exacto:
+            - `SUBSCRIPTION_PLAN_INACTIVE` — el plan referenciado no está en estado ACTIVE.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetail" }
 
   /me/subscriptions/{subscriptionId}:
     parameters:
@@ -333,7 +357,11 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/VersionConflict" }
         "422":
-          description: Cambio de plan requiere acknowledgeHistoryImpact=true cuando existen intentos de cursos previos.
+          description: |
+            Error semántico que impide actualizar la suscripción.
+
+            El campo `code` identifica el motivo exacto:
+            - `SUBSCRIPTION_HISTORY_IMPACT_NOT_ACKNOWLEDGED` — cambio de plan con historial de intentos previos requiere `acknowledgeHistoryImpact=true`.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetail" }
@@ -350,7 +378,11 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: No puede retirarse la última suscripción activa.
+          description: |
+            No puede retirarse la última suscripción activa.
+
+            El campo `code` identifica el motivo exacto:
+            - `SUBSCRIPTION_LAST_ACTIVE` — se intentó eliminar la única suscripción activa restante.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetail" }
@@ -1452,6 +1484,15 @@ paths:
             name: status,
             in: query,
             schema: { $ref: "#/components/schemas/OfferingStatus" },
+          }
+        - {
+            name: journeyCode,
+            in: query,
+            required: false,
+            description: "Filtra las ofertas por jornada. Solo se devuelven ofertas que tengan al menos una opción de horario cuya jornada esté en el conjunto indicado. Puede repetirse para incluir varias jornadas (p. ej. journeyCode=DIURNA&journeyCode=NOCTURNA). Si se omite, no se aplica filtro por jornada.",
+            schema: { type: array, items: { type: string } },
+            style: form,
+            explode: true,
           }
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/SizeParam"
@@ -2862,6 +2903,7 @@ components:
           periodId,
           periodName,
           programIds,
+          scopeEntries,
           status,
           createdAt,
           updatedAt,
@@ -2874,9 +2916,16 @@ components:
         periodName: { type: string }
         programIds:
           type: array
+          description: IDs de programas distintos derivados de scopeEntries (campo compatible con clientes anteriores).
           minItems: 1
           maxItems: 2
           items: { type: string, format: uuid }
+        scopeEntries:
+          type: array
+          description: Pares (programId, journeyCode) que definen el alcance completo de la simulación.
+          minItems: 1
+          maxItems: 4
+          items: { $ref: "#/components/schemas/SimulationScopeEntry" }
         status: { $ref: "#/components/schemas/SimulationStatus" }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -2900,19 +2949,29 @@ components:
               description: Sesiones para render del calendario semanal.
               items: { $ref: "#/components/schemas/WeeklyScheduleEntry" }
             validation: { $ref: "#/components/schemas/SimulationValidation" }
+    SimulationScopeEntry:
+      type: object
+      required: [programId, journeyCode]
+      properties:
+        programId: { type: string, format: uuid }
+        journeyCode: { type: string, minLength: 1 }
+      description: >
+        Par (programa, jornada) que define el alcance de una simulación.
     SimulationCreateRequest:
       type: object
       additionalProperties: false
-      required: [name, periodId, programIds]
+      required: [name, periodId, selections]
       properties:
         name: { type: string, minLength: 1, maxLength: 120 }
         periodId: { type: string, format: uuid }
-        programIds:
+        selections:
           type: array
           minItems: 1
-          maxItems: 2
-          uniqueItems: true
-          items: { type: string, format: uuid }
+          maxItems: 4
+          description: >
+            Pares (programId, journeyCode) que definen el alcance de la simulación.
+            Máximo 2 programas distintos; cada programa puede tener 1 o 2 jornadas (máximo 4 pares en total).
+          items: { $ref: "#/components/schemas/SimulationScopeEntry" }
     SimulationUpdateRequest:
       type: object
       additionalProperties: false
