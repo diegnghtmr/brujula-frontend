@@ -1,5 +1,5 @@
 /**
- * S2-F-4: AllowedDomainsAdminPage — admin screen for allowed email domain management.
+ * AllowedDomainsAdminPage — admin screen for allowed email domain management.
  *
  * Spec scenarios:
  * 1. Renders the domain list from the API.
@@ -66,7 +66,7 @@ function mockStudent() {
   );
 }
 
-describe("AllowedDomainsAdminPage (S2-F-4)", () => {
+describe("AllowedDomainsAdminPage", () => {
   it("renders the list of allowed domains from the API", async () => {
     mockAdmin();
     server.use(

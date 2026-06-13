@@ -1,6 +1,6 @@
 /**
- * S1-G-5 (/me display): UserProfileCard renders current user profile from /me.
- * Tests: renders name, email, role; themed via DESIGN tokens.
+ * UserProfileCard — renders current user profile from /me.
+ * Tests: renders name, email, role; themed via design tokens.
  */
 
 import { describe, it, expect } from "vitest";
@@ -19,7 +19,7 @@ function createWrapper() {
     createElement(QueryClientProvider, { client: queryClient }, children);
 }
 
-describe("UserProfileCard (S1-G-5 /me display)", () => {
+describe("UserProfileCard", () => {
   it("renders user full name from /me response", async () => {
     server.use(
       http.get("/api/v1/me", () => {

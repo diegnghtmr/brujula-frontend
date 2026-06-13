@@ -1,8 +1,8 @@
 /**
- * SimulationListPage — SIM-002, FE-001
+ * SimulationListPage
  *
  * Lists simulations; status filter; create button navigates.
- * Delete scenarios mirror SubscriptionListPage / WU-1 Fix B pattern.
+ * Delete scenarios mirror SubscriptionListPage pattern.
  */
 
 import { describe, it, expect } from "vitest";
@@ -136,7 +136,7 @@ describe("SimulationListPage", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Delete simulation scenarios (mirror SubscriptionListPage / WU-1 Fix B)
+// Delete simulation scenarios (mirror SubscriptionListPage)
 // ---------------------------------------------------------------------------
 
 describe("SimulationListPage — Eliminar simulación", () => {

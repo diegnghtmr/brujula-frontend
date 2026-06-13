@@ -1,8 +1,7 @@
 /**
- * S1-G-3: RequireAuth — route guard component.
+ * RequireAuth — route guard component.
  *
- * Design contract (Design §7):
- * - Gates protected routes on auth state from useCurrentUser (/me via TanStack Query).
+ * Gates protected routes on auth state from useCurrentUser (/me via TanStack Query).
  * - Unauthenticated (401 / error) → Navigate to /login.
  * - Loading → render loading skeleton (no flash of protected content).
  * - Authenticated → render children.

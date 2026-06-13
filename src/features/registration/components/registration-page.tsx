@@ -1,8 +1,8 @@
 /**
- * S2-F-1: RegistrationPage — student self-registration screen (/register).
+ * RegistrationPage — student self-registration screen (/register).
  *
  * Design contract:
- * - NO password field (OPTION A / DT-011). Keycloak sends UPDATE_PASSWORD via email.
+ * - NO password field. Keycloak sends UPDATE_PASSWORD via email.
  * - RHF + Zod validation: email (institutional), fullName (required), consent checkboxes.
  * - On 202: success notice ("revisá tu correo...").
  * - On 4xx: ProblemDetail.detail displayed as error message.

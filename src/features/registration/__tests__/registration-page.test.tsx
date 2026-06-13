@@ -1,5 +1,5 @@
 /**
- * S2-F-1: RegistrationPage — student self-registration form.
+ * RegistrationPage — student self-registration form.
  *
  * Spec scenarios:
  * 1. Renders form with email, fullName, terms + privacy checkboxes (NO password).

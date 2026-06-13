@@ -1,5 +1,5 @@
 /**
- * S1-G-6: DisclaimerBanner — persistent accessible banner.
+ * DisclaimerBanner — persistent accessible banner.
  * Tests: renders disclaimer text, accessible role, dismissible per session,
  * reappears on re-render (no sessionStorage persistence in unit tests),
  * focus-visible, minimum touch target.
@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DisclaimerBanner } from "@/features/auth/components/disclaimer-banner";
 
-describe("DisclaimerBanner (S1-G-6)", () => {
+describe("DisclaimerBanner", () => {
   beforeEach(() => {
     // Clear sessionStorage between tests to ensure banner is visible
     sessionStorage.clear();
@@ -23,7 +23,7 @@ describe("DisclaimerBanner (S1-G-6)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders with role='region' and aria-label for accessibility (S-WUD-001 fix)", () => {
+  it("renders with role='region' and aria-label for accessibility", () => {
     render(<DisclaimerBanner />);
     // A persistent informational disclaimer uses role="region" + aria-label + aria-live="polite"
     // (not role="alert" which carries implicit aria-live="assertive" — inappropriate for a static banner).

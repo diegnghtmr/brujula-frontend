@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// DESIGN §7.3 override: Badge uses rounded-full
-// Academic state variants per DESIGN §6.3
+// Badge uses rounded-full (overrides shadcn default)
+// Academic state variants
 const badgeVariants = cva(
   "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
@@ -29,7 +29,7 @@ const badgeVariants = cva(
         warning: "border-transparent bg-warning text-warning-foreground",
         info: "border-transparent bg-info text-info-foreground",
 
-        // Academic enrollment state variants (DESIGN §6.3 subtle/outline/muted mapping)
+        // Academic enrollment state variants (subtle/outline/muted mapping)
         aprobada: "border-transparent bg-success-subtle text-success-subtle-foreground",
         "en-curso": "border-transparent bg-info-subtle text-info-subtle-foreground",
         cancelada: "border-transparent bg-warning-subtle text-warning-subtle-foreground",
@@ -45,7 +45,7 @@ const badgeVariants = cva(
   }
 );
 
-/** Icon mapping per academic state (DESIGN §6.3) */
+/** Icon mapping per academic state. */
 const ACADEMIC_STATE_ICONS: Partial<
   Record<NonNullable<BadgeProps["variant"]>, LucideIcon>
 > = {

@@ -1,5 +1,5 @@
 /**
- * OutdatedBanner — FE-007, STALE-002
+ * OutdatedBanner
  *
  * status=OUTDATED → banner
  * "Revisar" click → POST /review

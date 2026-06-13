@@ -1,5 +1,5 @@
 /**
- * SubscribeForm — create a new program subscription (SUB-1).
+ * SubscribeForm — create a new program subscription.
  *
  * Flow:
  * 1. Load active programs → populate program selector.
@@ -34,7 +34,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 const catalogApi = createApiInstance(CatalogApi);
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
 
-// DEBT-F3-001: listPrograms and listStudyPlans return allOf *Page types.
+// listPrograms and listStudyPlans return allOf *Page types.
 // The generator collapses allOf to PageMeta; cast to the full shape at usage.
 interface ProgramPageFull {
   content: Array<{
@@ -99,7 +99,7 @@ function SubscribeForm() {
   });
 
   // Load active programs
-  // DEBT-F3-001: listPrograms returns ProgramPage (allOf collapsed by generator) — cast to full shape
+  // listPrograms returns ProgramPage (allOf collapsed by generator) — cast to full shape
   const { data: programData } = useQuery({
     queryKey: ["programs", "list", 0],
     queryFn: () =>
@@ -182,7 +182,7 @@ function SubscribeForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 border rounded text-sm",
-            // §2.4: API error → destructive-subtle
+            // API error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -195,7 +195,7 @@ function SubscribeForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 border rounded text-sm",
-            // §2.4: load error → destructive-subtle
+            // Load error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >

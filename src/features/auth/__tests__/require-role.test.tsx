@@ -1,5 +1,5 @@
 /**
- * S2-F-7: RequireRole — role-based route guard.
+ * RequireRole — role-based route guard.
  *
  * Spec scenarios:
  * 1. Renders children when user has the required role.
@@ -56,7 +56,7 @@ function mockUnauthenticated() {
   );
 }
 
-describe("RequireRole (S2-F-7)", () => {
+describe("RequireRole", () => {
   it("renders children when user has the required role", async () => {
     mockUser("ADMIN");
     render(

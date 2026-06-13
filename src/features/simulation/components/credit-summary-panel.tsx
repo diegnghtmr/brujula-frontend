@@ -1,7 +1,5 @@
 /**
- * CreditSummaryPanel — DET-002, FE-005, INV-005
- *
- * One card per ProgramCreditSummary.
+ * CreditSummaryPanel — one card per ProgramCreditSummary.
  * WCAG 2.2 AA: withinLimit=false → warning COLOR + ICON + LABEL (never color alone).
  * withinLimit=true → success COLOR + ICON + LABEL.
  */
@@ -25,9 +23,9 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
             className={cn(
               "p-3 rounded border",
               withinLimit
-                // §2.4: within limit (éxito) → success-subtle
+                // Within limit (success) → success-subtle
                 ? "bg-success-subtle border-transparent"
-                // §2.4: exceeds limit (advertencia) → warning-subtle
+                // Exceeds limit (warning) → warning-subtle
                 : "bg-warning-subtle border-transparent"
             )}
           >
@@ -67,7 +65,7 @@ function CreditSummaryPanel({ summaries }: CreditSummaryPanelProps) {
               </div>
             </div>
             <div className="mt-1 text-sm text-foreground">
-              {/* §3.1/§9: tabular-nums for numeric credit values */}
+              {/* Tabular-nums for numeric credit values */}
               <span className="font-semibold tabular-nums">{selectedCredits}</span>
               {" / "}
               <span className="tabular-nums">{creditLimit}</span>

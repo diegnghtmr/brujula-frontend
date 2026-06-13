@@ -22,9 +22,9 @@ if (!rootElement) throw new Error("Root element not found");
 
 createRoot(rootElement).render(
   <StrictMode>
-    {/* TanStack Query provider — must wrap entire app (FCC-001) */}
+    {/* TanStack Query provider — must wrap entire app */}
     <QueryClientProvider client={queryClient}>
-      {/* Theme provider — persists light/dark preference (DESIGN §8) */}
+      {/* Theme provider — persists light/dark preference */}
       <ThemeProvider>
         <AppRouter />
       </ThemeProvider>

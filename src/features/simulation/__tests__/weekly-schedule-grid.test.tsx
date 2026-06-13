@@ -1,7 +1,7 @@
 /**
- * WeeklyScheduleGrid — WCAG 2.2 AA + DET-001
+ * WeeklyScheduleGrid — WCAG 2.2 AA
  *
- * INV-005: inClash=true → color + icon + ARIA label (never color alone).
+ * inClash=true → color + icon + ARIA label (never color alone).
  * Assertions: screen-reader announces day+time+course+clash; non-clash do not.
  */
 
@@ -74,7 +74,7 @@ describe("WeeklyScheduleGrid", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  // ─── Task 4 (#12): Time-grid calendar tests ───────────────────────────────────
+  // ─── Time-grid calendar tests ────────────────────────────────────────────────
 
   it("hour column renders labels covering the entries' time range", () => {
     const entry: WeeklyScheduleEntry = {
@@ -153,7 +153,7 @@ describe("WeeklyScheduleGrid", () => {
     expect(screen.getByRole("columnheader", { name: "Dom" })).toBeInTheDocument();
   });
 
-  // ─── #15: ±1 hour padding for deriveHourRange ─────────────────────────────────
+  // ─── ±1 hour padding for deriveHourRange ─────────────────────────────────────
 
   it("#15: single entry 07:00–09:00 renders '06:00' label (padded below) and '09:00' label (padded above)", () => {
     const entry: WeeklyScheduleEntry = {

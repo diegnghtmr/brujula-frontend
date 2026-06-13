@@ -1,5 +1,5 @@
 /**
- * AppNav — primary navigation landmark for authenticated pages (Slice A).
+ * AppNav — primary navigation landmark for authenticated pages.
  *
  * Presentational component: no data fetch.
  * Renders four NavLinks inside a <nav aria-label="Navegación principal"> landmark.
@@ -29,7 +29,7 @@ function AppNav() {
               end={to === "/dashboard"}
               className={({ isActive }) =>
                 cn(
-                  // §6.12/§9: nav links use border-b underline, no pill geometry
+                  // Nav links use border-b underline, no pill geometry
                   "px-3 py-1.5 text-sm font-medium transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                   isActive

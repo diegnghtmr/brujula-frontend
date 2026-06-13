@@ -1,5 +1,5 @@
 /**
- * StudyPlanPage — view for a single study plan (CAT-002/CAT-003).
+ * StudyPlanPage — view for a single study plan.
  * Route: /catalog/plans/:planId
  *
  * Design contract:
@@ -23,14 +23,14 @@ const PLAN_STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    // Icon carries the semantic color; label uses text-foreground (≥4.5:1)
     iconClassName: "text-success",
     labelClassName: "text-foreground",
   },
   DRAFT: {
     label: "Borrador",
     icon: "◑",
-    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    // Icon carries the semantic color; label uses text-foreground (≥4.5:1)
     iconClassName: "text-warning",
     labelClassName: "text-foreground",
   },

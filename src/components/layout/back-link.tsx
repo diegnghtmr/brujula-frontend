@@ -1,5 +1,5 @@
 /**
- * BackLink — reusable back navigation affordance (WU-2).
+ * BackLink — reusable back navigation affordance.
  *
  * Props:
  * - `to`: explicit parent route → renders a React Router <Link>.
@@ -34,7 +34,7 @@ const BASE_CLASSES = cn(
   "hover:text-foreground transition-colors",
   // Focus visible ring (keyboard a11y)
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-  // Min 44px hit target height (§8 a11y)
+  // Min 44px hit target height (a11y)
   "min-h-[44px]",
   // No heavy button styling — inline text style
   "rounded-none bg-transparent border-0 p-0 cursor-pointer"
@@ -72,7 +72,7 @@ function BackLink({ to, label = "Volver", className }: BackLinkProps) {
       type="button"
       aria-label={ariaLabel}
       onClick={() => {
-        // W-2: guard against empty history on deep-link / fresh load.
+        // Guard against empty history on deep-link / fresh load.
         // React Router sets `window.history.state.idx`; idx > 0 means there
         // is a prior SPA entry to go back to. Without this guard, navigate(-1)
         // on idx === 0 exits the app entirely.

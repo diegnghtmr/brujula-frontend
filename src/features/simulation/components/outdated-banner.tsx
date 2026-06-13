@@ -1,5 +1,5 @@
 /**
- * OutdatedBanner — FE-007, STALE-002
+ * OutdatedBanner
  *
  * Shows when simulation.status = OUTDATED.
  * "Revisar" button → POST /me/simulations/:id/review
@@ -46,7 +46,7 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
     <div
       className={cn(
         "p-4 rounded border",
-        // §2.4/§6.8: desactualizada → warning-subtle (notice banner)
+        // desactualizada → warning-subtle (notice banner)
         "bg-warning-subtle text-warning-subtle-foreground border-transparent"
       )}
     >
@@ -68,7 +68,7 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
           aria-label="Revisar simulación"
           className={cn(
             "shrink-0 px-3 py-1.5 text-xs font-medium rounded border transition-colors",
-            // §6.1: secondary action in context of warning banner
+            // Secondary action in context of warning banner
             "bg-warning text-warning-foreground border-transparent hover:opacity-90",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
@@ -82,7 +82,7 @@ function OutdatedBanner({ simulationId, status, onReviewSuccess }: OutdatedBanne
           role="alert"
           className={cn(
             "mt-3 p-2 rounded border text-xs",
-            // §2.4: blocking error → destructive-subtle
+            // blocking error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >

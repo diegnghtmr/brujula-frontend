@@ -1,5 +1,5 @@
 /**
- * S2-F-5: StaffAdminPage — admin screen for staff account management.
+ * StaffAdminPage — admin screen for staff account management.
  *
  * Spec scenarios:
  * 1. Renders staff list from API.
@@ -66,7 +66,7 @@ function mockStudent() {
   );
 }
 
-describe("StaffAdminPage (S2-F-5)", () => {
+describe("StaffAdminPage", () => {
   it("renders staff list from the API", async () => {
     mockAdmin();
     server.use(

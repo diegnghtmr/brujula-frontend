@@ -1,21 +1,20 @@
 /**
- * S1-G-6: DisclaimerBanner — persistent, accessible disclaimer banner.
+ * DisclaimerBanner — persistent, accessible disclaimer banner.
  *
- * Spec (DESIGN §6.13 / Spec Requirement: Disclaimer Banner):
  * - Always visible in authenticated shell until dismissed per session.
  * - Reappears on next login (sessionStorage, not localStorage).
  * - WCAG 2.2 AA: role="region" + aria-label + aria-live="polite", focus-visible, ≥44px touch targets.
- * - Styled via DESIGN tokens only. Light + dark.
+ * - Styled via design tokens only. Light + dark.
  * - Text must be neutral/professional Spanish (product requirement).
  *
- * ARIA note (S-WUD-001 fix): A persistent informational disclaimer is NOT an
- * assertive alert. Using role="alert" carries implicit aria-live="assertive" which
- * interrupts screen readers immediately — inappropriate for a static banner that was
- * already present on load. Changed to role="region" with aria-label + aria-live="polite"
- * so screen readers announce it at the next opportunity, not by interrupting the user.
+ * ARIA note: A persistent informational disclaimer is NOT an assertive alert.
+ * Using role="alert" carries implicit aria-live="assertive" which interrupts screen
+ * readers immediately — inappropriate for a static banner that was already present on load.
+ * Uses role="region" with aria-label + aria-live="polite" so screen readers announce it
+ * at the next opportunity, not by interrupting the user.
  *
  * Storage key exported as DISCLAIMER_SESSION_KEY so logout-button.tsx can clear it
- * without duplicating the string (avoids key-drift bugs — W-WUD-002 fix).
+ * without duplicating the string (avoids key-drift bugs).
  */
 
 import { useState } from "react";
@@ -45,7 +44,7 @@ function DisclaimerBanner() {
       aria-live="polite"
       className={cn(
         "w-full px-4 py-3",
-        // §6.13/P1-5: persistent calm notice, not an alert → secondary surface
+        // Persistent calm notice, not an alert → secondary surface
         "bg-secondary text-secondary-foreground",
         "border-b border-border",
         "flex items-start justify-between gap-4"

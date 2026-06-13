@@ -1,7 +1,7 @@
 /**
- * LogoutButton — verify-fix tests for W-WUD-002.
+ * LogoutButton — disclaimer session key cleared on logout.
  *
- * Spec (Spec §Disclaimer Banner): "dismissible per session but MUST reappear on next login."
+ * The banner is dismissible per session but MUST reappear on next login.
  * sessionStorage survives same-tab navigation. Logout MUST clear the disclaimer-dismissed
  * key so the banner is visible again after re-login in the same tab.
  */
@@ -28,7 +28,7 @@ function createWrapper() {
     );
 }
 
-describe("LogoutButton — disclaimer session key cleared on logout (W-WUD-002)", () => {
+describe("LogoutButton — disclaimer session key cleared on logout", () => {
   beforeEach(() => {
     sessionStorage.clear();
     // Intercept logout POST so test doesn't fail on network

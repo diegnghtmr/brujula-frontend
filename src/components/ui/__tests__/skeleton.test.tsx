@@ -1,5 +1,5 @@
 /**
- * Skeleton UI primitive — unit tests (DESIGN §6.15).
+ * Skeleton UI primitive — unit tests.
  *
  * Scenarios:
  * 1. Renders a <div> element.

@@ -1,8 +1,8 @@
 /**
- * OfferingBrowser — FE-002, FE-003
+ * OfferingBrowser
  *
  * Browses published offerings for a simulation's period+programs.
- * Fetches offerings for ALL scopeEntries in the simulation (spec FE-002).
+ * Fetches offerings for ALL scopeEntries in the simulation.
  * Each scopeEntry = { programId, journeyCode } — journeyCode filter applied to listOfferings.
  * Shows schedule options filtered by selectedJourneys; fires addSelection mutation on "Agregar".
  *
@@ -238,7 +238,7 @@ function ScheduleOptionRow({
           role="alert"
           className={cn(
             "mt-2 p-2 text-xs border rounded",
-            // §2.4: blocking error → destructive-subtle
+            // blocking error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >

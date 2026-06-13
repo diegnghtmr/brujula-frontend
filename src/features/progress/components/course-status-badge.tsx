@@ -1,7 +1,7 @@
 /**
  * CourseStatusBadge — WCAG 2.2 AA component for CourseProgressStatus.
  *
- * Accessibility rule (CROSS-5): every status is conveyed by COLOR + TEXT LABEL.
+ * Accessibility rule: every status is conveyed by COLOR + TEXT LABEL.
  * Color alone is never the sole signal. Text label is always present.
  *
  * Status mapping:
@@ -21,48 +21,48 @@ import { cn } from "@/lib/utils";
 const STATUS_CONFIG = {
   PENDING: {
     label: "Pendiente",
-    // §6.3: pendiente → muted (neutral, no cursada)
+    // Pendiente → muted (neutral, no cursada)
     className: "bg-muted text-muted-foreground border-transparent",
   },
   PASSED: {
     label: "Aprobada",
-    // §6.3: aprobada → success-subtle
+    // Aprobada → success-subtle
     className: "bg-success-subtle text-success-subtle-foreground border-transparent",
   },
   FAILED: {
     label: "Reprobada",
-    // §6.3: reprobada → destructive-subtle
+    // Reprobada → destructive-subtle
     className: "bg-destructive-subtle text-destructive-subtle-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelada",
-    // §6.3: cancelada → warning-subtle
+    // Cancelada → warning-subtle
     className: "bg-warning-subtle text-warning-subtle-foreground border-transparent",
   },
   AVAILABLE: {
     label: "Disponible",
-    // §6.3: habilitada → outline (border-success, bg-background)
+    // Habilitada → outline (border-success, bg-background)
     className: "border-success bg-background text-success-subtle-foreground",
   },
   BLOCKED: {
     label: "Bloqueada",
-    // §6.3: bloqueada → muted
+    // Bloqueada → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
   // Additional statuses that may come from the API
   IN_PROGRESS: {
     label: "En curso",
-    // §6.3: en-curso → info-subtle
+    // En-curso → info-subtle
     className: "bg-info-subtle text-info-subtle-foreground border-transparent",
   },
   PLANNED: {
     label: "Pendiente",
-    // §6.3: pendiente → muted
+    // Pendiente → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
   NOT_TAKEN: {
     label: "Pendiente",
-    // §6.3: pendiente → muted
+    // Pendiente → muted
     className: "bg-muted text-muted-foreground border-transparent",
   },
 } as const;
@@ -103,7 +103,7 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border",
-            // §2.4: advisory/soft warning → warning-subtle
+            // Advisory/soft warning → warning-subtle
             "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
           title={`Prerrequisito(s) recomendado(s): ${unmetRequirements?.join(", ")}`}
@@ -122,7 +122,7 @@ function CourseStatusBadge({ status, unmetRequirements }: CourseStatusBadgeProps
         <span
           className={cn(
             "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs border",
-            // §2.4: blocking/required missing → destructive-subtle
+            // Blocking/required missing prerequisite → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
           aria-label={`Prerrequisito(s) faltante(s): ${unmetRequirements?.join(", ")}`}

@@ -1,5 +1,5 @@
 /**
- * DeclareProgressForm — per-subscription malla with per-course attempt declaration (PRG-1).
+ * DeclareProgressForm — per-subscription malla with per-course attempt declaration.
  *
  * Route: /progress/subscriptions/:subscriptionId/declare
  *
@@ -169,7 +169,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            // §2.4: load error → destructive-subtle
+            // Load error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -182,7 +182,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            // §2.4: API error → destructive-subtle
+            // API error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -327,7 +327,7 @@ interface CourseRowProps {
 function CourseRow({ subscriptionId, referenceJourneyCode, course }: CourseRowProps) {
   const [declaring, setDeclaring] = useState(false);
 
-  // §6.4/§5.1: content tile → rounded-none
+  // Content tile → rounded-none
   return (
     <li className={cn("p-3 border rounded-none bg-card border-border")}>
       <div className="flex items-start justify-between gap-3">

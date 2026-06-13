@@ -1,5 +1,5 @@
 /**
- * SimulationListPage — SIM-002, FE-001
+ * SimulationListPage
  *
  * Route: /simulations
  *
@@ -55,7 +55,7 @@ function SimulationCard({ sim }: SimulationCardProps) {
   return (
     <li
       className={cn(
-        // §6.4/§5.1: content tile → rounded-none
+        // Content tile → rounded-none
         "p-4 border rounded-none bg-card border-border",
         "flex flex-col gap-3"
       )}
@@ -98,7 +98,7 @@ function SimulationCard({ sim }: SimulationCardProps) {
             Ver detalle
           </button>
 
-          {/* Destructive action — outline style, not heavy fill (§6.1/§2.3) */}
+          {/* Destructive action — outline style, not heavy fill */}
           <button
             type="button"
             aria-label={`Eliminar simulación ${sim.name}`}

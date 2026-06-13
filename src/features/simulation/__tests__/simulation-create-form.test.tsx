@@ -1,5 +1,5 @@
 /**
- * SimulationCreateForm — FE-001, SIM-001
+ * SimulationCreateForm
  *
  * MSW handlers for GET /periods and POST /me/simulations.
  * Uses REAL periodId/programId values from MSW fixtures — no hardcoded component values.

@@ -1,5 +1,5 @@
 /**
- * SubscriptionListPage — list the student's active subscriptions (SUB-2).
+ * SubscriptionListPage — list the student's active subscriptions.
  *
  * Route: /progress/subscriptions
  *
@@ -8,7 +8,7 @@
  * - Each subscription card links to curriculum view + progress summary.
  * - Quick action: "Declarar avance" → /progress/subscriptions/{id}/declare
  * - Quick action: "Ver resumen" → /progress/subscriptions/{id}/progress
- * - Quick action: "Dar de baja" → DELETE /me/subscriptions/{id} (WU-1 Fix B)
+ * - Quick action: "Dar de baja" → DELETE /me/subscriptions/{id}
  *   Requires inline confirmation step before deleting (mirrors AttemptListPage pattern).
  */
 
@@ -62,7 +62,7 @@ function SubscriptionCard({ sub }: SubscriptionCardProps) {
   return (
     <li
       className={cn(
-        // §6.4/§5.1: content tile → rounded-none
+        // Content tile → rounded-none
         "p-5 border rounded-none bg-card border-border",
         "flex flex-col gap-3"
       )}
@@ -137,7 +137,7 @@ function SubscriptionCard({ sub }: SubscriptionCardProps) {
             Ver historial
           </Link>
 
-          {/* Destructive action — outline style, not heavy fill (§6.1/§2.3) */}
+          {/* Destructive action — outline style, not heavy fill */}
           <button
             type="button"
             aria-label={`Dar de baja suscripción a ${sub.programName}`}

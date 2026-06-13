@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-// A11Y-001 (T-WU6.8): extend vitest expect with toHaveNoViolations matcher.
+// Extend vitest expect with toHaveNoViolations matcher.
 // Runtime: manually extend because vitest-axe/dist/extend-expect.js is empty.
 // Types: import side-effect to augment Vi.Assertion via vitest-axe ambient declaration.
 import "vitest-axe/extend-expect";

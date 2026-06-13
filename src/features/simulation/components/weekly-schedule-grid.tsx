@@ -1,5 +1,5 @@
 /**
- * WeeklyScheduleGrid — DET-001, FE-004, INV-005
+ * WeeklyScheduleGrid
  *
  * True time-grid calendar layout:
  * - Leftmost "Hora" column with hour labels derived from entry range.

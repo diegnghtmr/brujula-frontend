@@ -1,5 +1,5 @@
 /**
- * S1-G-4: useCurrentUser hook — TanStack Query hook wrapping the generated /me endpoint.
+ * useCurrentUser hook — TanStack Query hook wrapping the generated /me endpoint.
  * Tests: 200 authenticated path, 401 unauthenticated path.
  */
 
@@ -33,7 +33,7 @@ const MOCK_USER: CurrentUser = {
   onboardingCompleted: true,
 };
 
-describe("useCurrentUser hook (S1-G-4)", () => {
+describe("useCurrentUser hook", () => {
   it("returns user data when /me responds 200", async () => {
     server.use(
       http.get("/api/v1/me", () => {

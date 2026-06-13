@@ -1,5 +1,5 @@
 /**
- * A11Y-001 (T-WU6.8): ambient augmentation for vitest-axe toHaveNoViolations.
+ * Ambient augmentation for vitest-axe toHaveNoViolations.
  *
  * vitest-axe@0.1.0 was authored for an older vitest that exposed a global
  * `Vi.Assertion` namespace.  vitest ≥3 dropped that namespace.  The canonical

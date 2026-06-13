@@ -1,10 +1,10 @@
 /**
  * Shared Axios instance for Brújula API.
- * DESIGN §2: CSRF-aware instance — reads XSRF cookie and sets X-XSRF-TOKEN header on writes.
+ * CSRF-aware instance — reads XSRF cookie and sets X-XSRF-TOKEN header on writes.
  * Base URL /api/v1 (relative — Vite proxies /api → localhost:8080).
  * withCredentials: true to send session cookie on all requests.
  *
- * AGENTS §4.2 / TRD §19.2: components NEVER call axios directly.
+ * Components NEVER call axios directly.
  * All API calls go through generated *Api classes instantiated here.
  */
 

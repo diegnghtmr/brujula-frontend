@@ -1,5 +1,5 @@
 /**
- * App router — Fase 1 + Fase 2 routes.
+ * App router.
  *
  * Route structure:
  * Public:
@@ -11,9 +11,9 @@
  *
  * Protected (RequireAuth + AuthenticatedShell):
  *   /dashboard                         → DashboardPage
- *   /catalog/programs                  → ProgramListPage (CAT-001)
- *   /catalog/plans/:planId             → StudyPlanPage (CAT-002/CAT-003)
- *   /curriculum/plans/:planId/malla    → MallaView (CUR-008)
+ *   /catalog/programs                  → ProgramListPage
+ *   /catalog/plans/:planId             → StudyPlanPage
+ *   /curriculum/plans/:planId/malla    → MallaView
  *
  * Admin-gated (RequireRole(ADMIN) inside the component):
  *   /admin/staff           → StaffAdminPage
@@ -104,7 +104,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Catalog routes — CAT-001/CAT-002/CAT-003 (Fase 2) — authenticated users only */}
+      {/* Catalog routes — authenticated users only */}
       <Route
         path="/catalog/programs"
         element={
@@ -126,7 +126,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Curriculum routes — CUR-008 (Fase 2) — authenticated users only */}
+      {/* Curriculum routes — authenticated users only */}
       <Route
         path="/curriculum/plans/:planId/malla"
         element={
@@ -138,7 +138,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Progress / Student onboarding routes — Fase 3 (WU5) — STUDENT role, RequireAuth */}
+      {/* Progress / Student onboarding routes — STUDENT role, RequireAuth */}
       <Route
         path="/progress/subscriptions"
         element={
@@ -190,7 +190,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Simulation routes — Fase 4 (WU6) — STUDENT role, RequireAuth */}
+      {/* Simulation routes — STUDENT role, RequireAuth */}
       <Route
         path="/simulations"
         element={

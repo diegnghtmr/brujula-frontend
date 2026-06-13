@@ -1,5 +1,5 @@
 /**
- * ValidationNoticeList — FE-006, DET-003
+ * ValidationNoticeList
  *
  * blocking in role="alert" distinct from warnings advisory region.
  * Both render when both present.

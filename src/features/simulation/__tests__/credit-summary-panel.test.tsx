@@ -1,5 +1,5 @@
 /**
- * CreditSummaryPanel — DET-002, FE-005, INV-005
+ * CreditSummaryPanel
  *
  * withinLimit=false → warning icon + label (WCAG: not color alone)
  * withinLimit=true  → success indicator

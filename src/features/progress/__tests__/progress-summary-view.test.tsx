@@ -1,13 +1,13 @@
 /**
- * WU5-T08: ProgressSummaryView
+ * ProgressSummaryView
  *
  * Spec scenarios:
- * AVL-2-HP:            renders approvedCredits, pendingCredits, progressPercentage,
- *                       estimatedHistoricalAverage, averagesByPeriod
- * AVL-2-NO-ATTEMPTS:   estimatedHistoricalAverage is null (shown as "—"), averagesByPeriod empty
- * CROSS-6-DISCLAIMER:  disclaimer text rendered and non-empty
+ * - Renders approvedCredits, pendingCredits, progressPercentage,
+ *   estimatedHistoricalAverage, averagesByPeriod.
+ * - estimatedHistoricalAverage is null (shown as "—"), averagesByPeriod empty.
+ * - Disclaimer text rendered and non-empty.
  *
- * CRITICAL (Fase-2 C-2): component fires GET /me/subscriptions/{id}/progress — MSW handler required.
+ * CRITICAL: component fires GET /me/subscriptions/{id}/progress — MSW handler required.
  */
 
 import { describe, it, expect } from "vitest";

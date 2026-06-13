@@ -1,15 +1,14 @@
 /**
- * WU5-T06: CourseStatusBadge — WCAG 2.2 AA accessibility
+ * CourseStatusBadge — WCAG 2.2 AA accessibility
  *
- * Spec: CROSS-5-RENDER
  * Each CourseProgressStatus value must render:
  *   - a visible text label (not color alone)
  *   - color + text only (no icon element)
  *
  * Statuses: PENDING, PASSED, FAILED, CANCELLED, AVAILABLE, BLOCKED
  *
- * WU6 (T-WU6.8 / QAL-A11Y-001-S3): vitest-axe assertions confirm zero
- * axe violations at component level (jsdom, no backend required).
+ * vitest-axe assertions confirm zero axe violations at component level
+ * (jsdom, no backend required).
  */
 
 import { describe, it, expect } from "vitest";
@@ -120,7 +119,7 @@ describe("CourseStatusBadge (CROSS-5-RENDER)", () => {
 });
 
 /**
- * Guard tests — §6.3 badge mapping regression (FIX 1).
+ * Guard tests — badge mapping regression.
  * These guard that:
  *   - AVAILABLE (habilitada) renders outline classes and NOT a solid bg-state-habilitada.
  *   - CANCELLED (cancelada) renders bg-warning-subtle and NOT bg-state-cancelada solid.
@@ -153,12 +152,12 @@ describe("CourseStatusBadge — §6.3 class mapping guards", () => {
 });
 
 /**
- * T-WU6.8 / QAL-A11Y-001-S3 — vitest-axe zero-violation assertions.
+ * vitest-axe zero-violation assertions.
  *
  * Runs axe-core at jsdom level for each status variant.
  * Confirms badge structure (aria-label, aria-hidden icon, visible label)
  * produces zero accessibility violations.
- * SUGGESTION-3: WCAG 1.4.3 color-contrast is NOT exercised under jsdom; it is verified by the Playwright e2e sweep.
+ * WCAG 1.4.3 color-contrast is NOT exercised under jsdom; it is verified by the Playwright e2e sweep.
  */
 describe("CourseStatusBadge — axe zero-violations (T-WU6.8)", () => {
   const statuses = Object.values(CourseProgressStatus);

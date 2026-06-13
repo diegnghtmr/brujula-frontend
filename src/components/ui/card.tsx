@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-// DESIGN §7.3 override: Card uses rounded-none and shadow-none
+// Card uses rounded-none and shadow-none (overrides shadcn default)
 function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div

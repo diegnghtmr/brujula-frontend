@@ -1,9 +1,8 @@
 /**
- * S2-F-7: RequireRole — role-based route guard.
+ * RequireRole — role-based route guard.
  *
- * Design contract (Design §7):
- * - Wraps RequireAuth and adds role check from useCurrentUser().data.role.
- * - Unauthenticated → redirect to /login (delegated to RequireAuth).
+ * Adds role check from useCurrentUser().data.role on top of auth gating.
+ * - Unauthenticated → redirect to /login.
  * - Authenticated but wrong role → redirect to /403-forbidden.
  * - Loading → spinner.
  * - Correct role → render children.

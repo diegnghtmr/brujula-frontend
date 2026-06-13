@@ -1,5 +1,5 @@
 /**
- * CAT-001: ProgramListPage
+ * ProgramListPage
  *
  * Spec scenarios:
  * 1. Renders program name and faculty for each active program (from MSW-mocked GET /programs).
@@ -9,7 +9,7 @@
  * 5. Pagination next button advances page (request param verified).
  * 6. Pagination next button re-renders with new page content (DOM verified).
  *
- * URL persistence scenarios (CAT-001-URL):
+ * URL persistence scenarios:
  * 7. ?page=1 in URL fetches page 1 and shows "Página 2 de N".
  * 8. Clicking "Siguiente" updates URL search param to ?page=1.
  * 9. Clicking "Anterior" from page 1 returns to page 0 and disables the button.
@@ -251,7 +251,7 @@ describe("ProgramListPage (CAT-001)", () => {
 });
 
 /**
- * Guard tests — FIX 2: status label text contrast regression.
+ * Guard tests — status label text contrast regression.
  * Ensures the VISIBLE status label does NOT use bare text-success / text-warning
  * (which fail WCAG AA at 4.35:1 / 3.27:1). The label must use text-foreground
  * or *-subtle-foreground; the icon span carries the semantic color.
@@ -269,7 +269,7 @@ describe("ProgramCard — status label contrast guard (FIX 2)", () => {
   it("ACTIVE status label does not use bare text-success class (fails WCAG AA)", () => {
     const { container } = render(<ProgramCard program={activeProgram} />);
     // The status text span wraps icon + label together in statusConf.className
-    // After FIX 2, the outer status span must NOT include text-success on the label text.
+    // The outer status span must NOT include text-success on the label text.
     // Implementation: icon gets text-success, label gets text-foreground or text-success-subtle-foreground.
     // We verify the visible label element does not carry text-success.
     const statusSpan = container.querySelector("[aria-label^='Estado:']");
@@ -338,7 +338,7 @@ describe("ProgramCard — keyboard accessibility (WCAG 2.1.1)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// CAT-001-URL: URL-based page persistence
+// URL-based page persistence
 // ---------------------------------------------------------------------------
 
 const PROGRAM_PAGE_MULTI_P0 = {

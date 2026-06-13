@@ -1,5 +1,5 @@
 /**
- * ProgressSummaryView — student progress summary for a subscription (AVL-2).
+ * ProgressSummaryView — student progress summary for a subscription.
  *
  * Route: /progress/subscriptions/:subscriptionId/progress
  *
@@ -9,7 +9,7 @@
  * - passedCourses, pendingFailedCourses
  * - estimatedHistoricalAverage (nullable → "—")
  * - averagesByPeriod table
- * - disclaimer (CROSS-6 — non-empty, self-declared notice)
+ * - disclaimer (non-empty, self-declared notice)
  *
  * Data source: GET /me/subscriptions/{subscriptionId}/progress via TanStack Query.
  */
@@ -86,7 +86,7 @@ function ProgressSummaryView() {
             aria-label="Resumen de créditos"
             className={cn(
               "grid grid-cols-2 sm:grid-cols-3 gap-4 p-4",
-              // §6.4/§5.1: content tile → rounded-none
+              // Content tile → rounded-none
                 "border rounded-none bg-card border-border"
             )}
           >
@@ -94,7 +94,7 @@ function ProgressSummaryView() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                 Créditos aprobados
               </span>
-              {/* §3.1/§9: tabular-nums for credit values */}
+              {/* Tabular-nums for credit values */}
               <span className="text-2xl font-bold text-foreground tabular-nums">
                 {summary.approvedCredits}
               </span>
@@ -161,7 +161,7 @@ function ProgressSummaryView() {
             <h2 className="text-sm font-semibold text-foreground mb-3">
               Promedio histórico estimado
             </h2>
-            {/* §3.1/§9: tabular-nums for average values */}
+            {/* Tabular-nums for average values */}
             <p className="text-2xl font-bold text-foreground tabular-nums">
               {summary.estimatedHistoricalAverage != null
                 ? summary.estimatedHistoricalAverage.toFixed(2)
@@ -193,12 +193,12 @@ function ProgressSummaryView() {
             )}
           </section>
 
-          {/* Disclaimer (CROSS-6) — required, always non-empty */}
+          {/* Disclaimer — required, always non-empty */}
           <aside
             aria-label="Aviso de datos autodeclarados"
             className={cn(
               "p-3 border rounded text-xs",
-              // §6.13/P1-5: persistent calm notice → warning-subtle (not assertive alert color)
+              // Persistent calm notice → warning-subtle (not assertive alert color)
               "bg-warning-subtle text-warning-subtle-foreground border-transparent"
             )}
           >

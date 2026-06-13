@@ -15,7 +15,7 @@ const PROGRAM_STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    // Icon carries the semantic color; label uses text-foreground (≥4.5:1)
     iconClassName: "text-success",
     labelClassName: "text-foreground",
   },

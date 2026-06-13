@@ -1,10 +1,9 @@
 /**
- * S1-G-1: LoginPage — landing page that initiates OIDC login.
+ * LoginPage — landing page that initiates OIDC login.
  *
- * Design contract (Design §7):
- * - Login = full-page redirect to backend OIDC authorization endpoint.
- *   NOT an XHR. Uses window.location.assign for testability (vs href assignment).
- * - The backend origin (same-origin via Vite proxy) handles /oauth2/authorization/keycloak.
+ * Login = full-page redirect to backend OIDC authorization endpoint.
+ * NOT an XHR. Uses window.location.assign for testability (vs href assignment).
+ * The backend origin (same-origin via Vite proxy) handles /oauth2/authorization/keycloak.
  */
 
 import { Link } from "react-router";

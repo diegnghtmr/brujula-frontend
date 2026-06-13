@@ -1,20 +1,20 @@
 /**
- * WU5-T04: DeclareProgressForm
+ * DeclareProgressForm
  *
  * Spec scenarios:
- * PRG-1-HP:              renders malla with semester groupings; POST with grade+status+Idempotency-Key
- * PRG-1-NOCTURNA:        POST uses journeyCode from referenceJourney.code (not hardcoded "DIURNA")
- * PRG-1-GRADE-MISMATCH:  shows 422 error (grade-status mismatch) to user
- * PRG-1-CANCELLED-GRADE: grade field hidden when CANCELLED selected
- * PRG-1-MULTI-ATTEMPT:   shows 409 conflict error to user
- * Slice-B-PERIOD-PICKER: periodId replaced with <select> from GET /periods
- *   - B.3.1 combobox populated from API, submit disabled during load, selectOptions works
- *   - B.3.2 empty periods list → disabled select + "No hay períodos disponibles", submit disabled
- *   - B.3.3 periods API error → role="alert", submit disabled
+ * - Renders malla with semester groupings; POST with grade+status+Idempotency-Key.
+ * - POST uses journeyCode from referenceJourney.code (not hardcoded "DIURNA").
+ * - Shows 422 error (grade-status mismatch) to user.
+ * - Grade field hidden when CANCELLED selected.
+ * - Shows 409 conflict error to user.
+ * - Period picker: periodId from GET /periods combobox.
+ *   - Combobox populated from API, submit disabled during load, selectOptions works.
+ *   - Empty periods list → disabled select + "No hay períodos disponibles", submit disabled.
+ *   - Periods API error → role="alert", submit disabled.
  *
- * CRITICAL (Fase-2 C-2): EVERY query this component fires must have a registered MSW handler:
+ * CRITICAL: EVERY query this component fires must have a registered MSW handler:
  *   GET /api/v1/me/subscriptions/{subscriptionId}/curriculum  (malla)
- *   GET /api/v1/periods  (period picker — Slice B)
+ *   GET /api/v1/periods  (period picker)
  *   POST /api/v1/me/course-attempts  (declare attempt)
  */
 
@@ -265,7 +265,7 @@ describe("DeclareProgressForm — Period picker (Slice B)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Original PRG-1 tests (migrated: textbox /período/i → selectOptions combobox /período/i)
+// Original tests (migrated: textbox /período/i → selectOptions combobox /período/i)
 // ---------------------------------------------------------------------------
 
 describe("DeclareProgressForm (PRG-1-HP)", () => {
@@ -462,7 +462,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
   });
 
   it("submits POST with journeyCode from referenceJourney.code (NOCTURNA — not hardcoded)", async () => {
-    // PRG-1-NOCTURNA: curriculum returns referenceJourney.code = "NOCTURNA".
+    // Curriculum returns referenceJourney.code = "NOCTURNA".
     // The POST body must contain journeyCode: "NOCTURNA", not the hardcoded "DIURNA".
     let capturedBody: unknown = null;
 
@@ -582,7 +582,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
   });
 
   it("shows 409 conflict error (duplicate attempt) to user", async () => {
-    // PRG-1-MULTI-ATTEMPT: POST returns 409, component surfaces the error.
+    // POST returns 409 (duplicate attempt), component surfaces the error.
     server.use(
       http.get(
         `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,

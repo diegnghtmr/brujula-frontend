@@ -1,5 +1,5 @@
 /**
- * ImportUploadPage — file upload for STAFF users (WU7, QAL-E2E-002-S4).
+ * ImportUploadPage — file upload for STAFF users.
  * Route: /imports/upload
  *
  * Architecture:
@@ -139,7 +139,7 @@ function ImportUploadPage() {
           role="alert"
           className={cn(
             "mb-4 p-3 text-sm border rounded",
-            // §2.4: API error → destructive-subtle
+            // API error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >

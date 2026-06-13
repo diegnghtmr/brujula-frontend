@@ -1,5 +1,5 @@
 /**
- * S2-F-4: AllowedDomainsAdminPage — admin screen for allowed email domain management.
+ * AllowedDomainsAdminPage — admin screen for allowed email domain management.
  * Route: /admin/allowed-domains (ADMIN-gated via RequireRole).
  *
  * Design contract:

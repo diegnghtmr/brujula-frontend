@@ -1,5 +1,4 @@
 /* Brújula — Canonical design tokens
- * Source of truth: DESIGN.md §7.1
  * Tailwind v4: @theme inline exposes CSS custom properties as Tailwind utilities.
  * No tailwind.config.js — v4 is CSS-first.
  */
@@ -120,11 +119,11 @@
   --popover: oklch(0.99 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Primary — monochrome (DESIGN.md §2.2 / §7.1: #111111 light, #fafafa dark) */
+  /* Primary — monochrome: #111111 light, #fafafa dark */
   --primary: oklch(0.145 0 0);
   --primary-foreground: oklch(0.98 0 0);
 
-  /* Secondary — neutral grey surface (DESIGN.md §7.1: #f5f5f5) */
+  /* Secondary — neutral grey surface: #f5f5f5 */
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.145 0 0);
 
@@ -132,7 +131,7 @@
   --muted: oklch(0.96 0 0);
   --muted-foreground: oklch(0.5 0 0);
 
-  /* Accent — neutral hover/selection (DESIGN.md §7.1: #f0f0f0) */
+  /* Accent — neutral hover/selection: #f0f0f0 */
   --accent: oklch(0.95 0 0);
   --accent-foreground: oklch(0.145 0 0);
 
@@ -140,38 +139,37 @@
   --destructive: oklch(0.55 0.22 29);
   --destructive-foreground: oklch(0.98 0 0);
 
-  /* Destructive subtle (DESIGN.md §2.3 / §7.1: #fdeaea / #780700) */
+  /* Destructive subtle: #fdeaea / #780700 */
   --destructive-subtle: oklch(0.96 0.03 29);
   --destructive-subtle-foreground: oklch(0.35 0.2 29);
 
-  /* Success (DESIGN.md §2.4 / §7.1: #007d48 / #ffffff) */
+  /* Success: #007d48 / #ffffff */
   --success: oklch(0.55 0.18 145);
   --success-foreground: oklch(0.98 0 0);
 
-  /* Success subtle (DESIGN.md §7.1: #e6f4ee / #00562f) */
+  /* Success subtle: #e6f4ee / #00562f */
   --success-subtle: oklch(0.96 0.04 145);
   --success-subtle-foreground: oklch(0.38 0.15 145);
 
-  /* Warning (DESIGN.md §2.4 / §7.1: #b45309 / #ffffff)
-   * FIX 4: §2.4 specifies #b45309 (dark amber). oklch(0.52 0.13 58) ≈ #b45309.
+  /* Warning: #b45309 / #ffffff — dark amber, oklch(0.52 0.13 58) ≈ #b45309.
    * Contrast: text-warning on white (#fff) ≈ 4.6:1 ✓ WCAG AA; bg-warning + white text ≈ 4.6:1 ✓
    * Previous oklch(0.65 0.18 65) was too light at ~3.27:1. */
   --warning: oklch(0.52 0.13 58);
   --warning-foreground: oklch(0.98 0 0);
 
-  /* Warning subtle (DESIGN.md §7.1: #fdf1e3 / #7a3a06) */
+  /* Warning subtle: #fdf1e3 / #7a3a06 */
   --warning-subtle: oklch(0.97 0.04 80);
   --warning-subtle-foreground: oklch(0.42 0.14 65);
 
-  /* Info (DESIGN.md §2.4 / §7.1: #1151ff / #ffffff) */
+  /* Info: #1151ff / #ffffff */
   --info: oklch(0.55 0.24 264);
   --info-foreground: oklch(0.98 0 0);
 
-  /* Info subtle (DESIGN.md §7.1: #e7edff / #0034e3) */
+  /* Info subtle: #e7edff / #0034e3 */
   --info-subtle: oklch(0.96 0.04 264);
   --info-subtle-foreground: oklch(0.38 0.22 264);
 
-  /* Border / Input / Ring (DESIGN.md §7.1: #e5e5e5 / #111111) */
+  /* Border / Input / Ring: #e5e5e5 / #111111 */
   --border: oklch(0.9 0 0);
   --input: oklch(0.9 0 0);
   --ring: oklch(0.145 0 0);
@@ -179,14 +177,14 @@
   /* Border radius base */
   --radius: 0.75rem;
 
-  /* Charts (DESIGN.md §2.5 / §7.1) */
+  /* Charts */
   --chart-1: oklch(0.55 0.24 264);
   --chart-2: oklch(0.55 0.18 145);
   --chart-3: oklch(0.65 0.18 65);
   --chart-4: oklch(0.55 0.12 210);
   --chart-5: oklch(0.6 0.25 330);
 
-  /* Sidebar (DESIGN.md §2.6 / §7.1) */
+  /* Sidebar */
   --sidebar: oklch(0.99 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.145 0 0);
@@ -232,78 +230,78 @@
 /* Dark theme                                                          */
 /* ------------------------------------------------------------------ */
 .dark {
-  /* DESIGN.md §7.1: #0a0a0b / #f5f5f5 */
+  /* #0a0a0b / #f5f5f5 */
   --background: oklch(0.09 0 0);
   --foreground: oklch(0.97 0 0);
 
-  /* DESIGN.md §7.1: #141416 / #f5f5f5 */
+  /* #141416 / #f5f5f5 */
   --card: oklch(0.12 0 0);
   --card-foreground: oklch(0.97 0 0);
 
   --popover: oklch(0.12 0 0);
   --popover-foreground: oklch(0.97 0 0);
 
-  /* Primary — monochrome (DESIGN.md §7.1: #fafafa / #111111) */
+  /* Primary — monochrome: #fafafa / #111111 */
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.145 0 0);
 
-  /* Secondary — neutral dark surface (DESIGN.md §7.1: #1f1f22 / #f5f5f5) */
+  /* Secondary — neutral dark surface: #1f1f22 / #f5f5f5 */
   --secondary: oklch(0.163 0 0);
   --secondary-foreground: oklch(0.97 0 0);
 
-  /* Muted (DESIGN.md §7.1: #1f1f22 / #9e9ea0) */
+  /* Muted: #1f1f22 / #9e9ea0 */
   --muted: oklch(0.163 0 0);
   --muted-foreground: oklch(0.65 0 0);
 
-  /* Accent — neutral dark hover/selection (DESIGN.md §7.1: #26262a / #f5f5f5) */
+  /* Accent — neutral dark hover/selection: #26262a / #f5f5f5 */
   --accent: oklch(0.19 0 0);
   --accent-foreground: oklch(0.97 0 0);
 
-  /* Destructive (DESIGN.md §7.1: #f5333a / #ffffff) */
+  /* Destructive: #f5333a / #ffffff */
   --destructive: oklch(0.6 0.22 29);
   --destructive-foreground: oklch(0.98 0 0);
 
-  /* Destructive subtle (DESIGN.md §7.1: #2a0f10 / #ff9ea0) */
+  /* Destructive subtle: #2a0f10 / #ff9ea0 */
   --destructive-subtle: oklch(0.18 0.06 29);
   --destructive-subtle-foreground: oklch(0.8 0.1 29);
 
-  /* Success (DESIGN.md §7.1: #1eaa52 / #052e18) */
+  /* Success: #1eaa52 / #052e18 */
   --success: oklch(0.6 0.18 145);
   --success-foreground: oklch(0.18 0.08 145);
 
-  /* Success subtle (DESIGN.md §7.1: #10271c / #74e0a3) */
+  /* Success subtle: #10271c / #74e0a3 */
   --success-subtle: oklch(0.18 0.05 145);
   --success-subtle-foreground: oklch(0.78 0.15 145);
 
-  /* Warning (DESIGN.md §7.1: #e0a127 / #2a1c05) */
+  /* Warning: #e0a127 / #2a1c05 */
   --warning: oklch(0.75 0.18 80);
   --warning-foreground: oklch(0.18 0.06 80);
 
-  /* Warning subtle (DESIGN.md §7.1: #2a2008 / #f3cf86) */
+  /* Warning subtle: #2a2008 / #f3cf86 */
   --warning-subtle: oklch(0.19 0.04 80);
   --warning-subtle-foreground: oklch(0.85 0.12 80);
 
-  /* Info (DESIGN.md §7.1: #5b8cff / #061233) */
+  /* Info: #5b8cff / #061233 */
   --info: oklch(0.6 0.2 264);
   --info-foreground: oklch(0.15 0.08 264);
 
-  /* Info subtle (DESIGN.md §7.1: #131d3d / #a9c2ff) */
+  /* Info subtle: #131d3d / #a9c2ff */
   --info-subtle: oklch(0.18 0.06 264);
   --info-subtle-foreground: oklch(0.75 0.12 264);
 
-  /* Border / Input / Ring (DESIGN.md §7.1: #2a2a2e / #d4d4d8) */
+  /* Border / Input / Ring: #2a2a2e / #d4d4d8 */
   --border: oklch(0.22 0 0);
   --input: oklch(0.22 0 0);
   --ring: oklch(0.84 0 0);
 
-  /* Charts (DESIGN.md §2.5 / §7.1 dark values) */
+  /* Charts — dark values */
   --chart-1: oklch(0.6 0.2 264);
   --chart-2: oklch(0.6 0.18 145);
   --chart-3: oklch(0.75 0.18 80);
   --chart-4: oklch(0.62 0.12 210);
   --chart-5: oklch(0.68 0.25 330);
 
-  /* Sidebar (DESIGN.md §2.6 / §7.1 dark values) */
+  /* Sidebar — dark values */
   --sidebar: oklch(0.1 0 0);
   --sidebar-foreground: oklch(0.97 0 0);
   --sidebar-primary: oklch(0.985 0 0);
@@ -348,7 +346,7 @@
 
 /* ------------------------------------------------------------------ */
 /* Atomic theme switch — disable transitions during theme change       */
-/* (WU-1 Fix C): ThemeProvider adds this class before flipping the     */
+/* ThemeProvider adds this class before flipping the                   */
 /* .dark / .light class, then removes it on the next rAF frame.        */
 /* This prevents shadcn primitives from animating their colors while   */
 /* body background has already flipped (staggered repaint).            */

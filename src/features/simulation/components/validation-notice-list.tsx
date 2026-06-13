@@ -1,5 +1,5 @@
 /**
- * ValidationNoticeList — FE-006, DET-003
+ * ValidationNoticeList
  *
  * Renders blocking notices in role="alert" (distinct).
  * Renders warnings in an advisory region (role="region" with label).
@@ -39,7 +39,7 @@ function ValidationNoticeList({ validation }: ValidationNoticeListProps) {
           role="alert"
           className={cn(
             "p-3 rounded border",
-            // §2.4: blocking/error → destructive-subtle
+            // blocking/error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -63,7 +63,7 @@ function ValidationNoticeList({ validation }: ValidationNoticeListProps) {
           aria-label="Advertencias"
           className={cn(
             "p-3 rounded border",
-            // §2.4: advertencia/warning → warning-subtle
+            // advertencia/warning → warning-subtle
             "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
         >

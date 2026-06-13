@@ -1,5 +1,5 @@
 /**
- * OfferingBrowser — FE-002, FE-003
+ * OfferingBrowser
  *
  * Filtered offerings rendered from MSW.
  * Option picker fires addSelection mutation.
@@ -200,7 +200,7 @@ describe("OfferingBrowser", () => {
   });
 
   /**
-   * RED→GREEN test for FE-002 multi-program gap.
+   * RED→GREEN test: multi-program gap.
    * This test MUST FAIL against the original single-programId code.
    * It passes only after OfferingBrowser fetches ALL programIds.
    */
@@ -603,7 +603,7 @@ describe("OfferingBrowser", () => {
     });
   });
 
-  // ─── New tests: simulation-browser-ux (Tasks 5.3 and 6.3) ──────────────────
+  // ─── New tests: simulation-browser-ux ──────────────────────────────────────
 
   /**
    * MSW curriculum fixtures shared by eligibility tests.
@@ -893,7 +893,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByText(/\bPRELIMINARY\b/)).not.toBeInTheDocument();
   });
 
-  // ─── Filter bar tests (Task 6.3) ──────────────────────────────────────────────
+  // ─── Filter bar tests ─────────────────────────────────────────────────────────
 
   it("typing in search input narrows the offering list and updates count", async () => {
     server.use(
@@ -1374,7 +1374,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByText(/no se pudo cargar/i)).not.toBeInTheDocument();
   });
 
-  // ─── Task 3: Dynamic semester options ────────────────────────────────────────
+  // ─── Dynamic semester options ─────────────────────────────────────────────────
 
   it("semester select includes options from curriculum data (incl. semesters > 10)", async () => {
     const semOfferings = {
@@ -1418,7 +1418,7 @@ describe("OfferingBrowser", () => {
     expect(options).not.toContain("Semestre 10");
   });
 
-  // ─── Task 1 (#10): Semester options from full malla, not just current offerings ──
+  // ─── Semester options from full malla, not just current offerings ─────────────
 
   it("semester 12 appears in semester select even when NO offering exists for it this period", async () => {
     // Curriculum has sem 11 (with offering) and sem 12 (NO offering this period).
@@ -1464,7 +1464,7 @@ describe("OfferingBrowser", () => {
     expect(options).toContain("Semestre 12");
   });
 
-  // ─── Task 4: Program filter integration ───────────────────────────────────────
+  // ─── Program filter integration ───────────────────────────────────────────────
 
   it("with 2 programs, selecting one hides the other's offerings", async () => {
     const twoProgSubs = [
@@ -1527,7 +1527,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByLabelText(/carrera/i)).not.toBeInTheDocument();
   });
 
-  // ─── Task 5: Jornada filter ────────────────────────────────────────────────
+  // ─── Jornada filter ───────────────────────────────────────────────────────────
 
   it("with DIURNA+NOCTURNA scope, jornada select renders with both options", async () => {
     server.use(
@@ -1568,7 +1568,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByLabelText(/jornada/i)).not.toBeInTheDocument();
   });
 
-  // ─── Task 6: Clear filters ────────────────────────────────────────────────────
+  // ─── Clear filters ────────────────────────────────────────────────────────────
 
   it("applying 2 filters then 'Limpiar filtros' restores the full list", async () => {
     server.use(
@@ -1605,7 +1605,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByRole("button", { name: /limpiar filtros/i })).not.toBeInTheDocument();
   });
 
-  // ─── Task 7: Semester subgroups in Disponibles bucket ────────────────────────
+  // ─── Semester subgroups in Disponibles bucket ────────────────────────────────
 
   it("Disponibles bucket shows semester subheadings when offerings have curriculum data", async () => {
     const semGroupedOfferings = {
@@ -1649,7 +1649,7 @@ describe("OfferingBrowser", () => {
     expect(screen.queryByRole("region", { name: /ya cursadas/i })).not.toBeInTheDocument();
   });
 
-  // ─── Task 5 (strengthened): jornada narrowing — exact journeyCode sent ────────
+  // ─── Jornada narrowing — exact journeyCode sent ───────────────────────────────
 
   it("selecting Nocturna jornada sends exactly NOCTURNA journeyCode and not DIURNA for a program with both", async () => {
     const offeringBothJourneys = {
@@ -1697,7 +1697,7 @@ describe("OfferingBrowser", () => {
     });
   });
 
-  // ─── Group offerings by course ──────────────────────────────────────────────
+  // ─── Group offerings by course ────────────────────────────────────────────────
 
   it("three offerings with the same courseId collapse to ONE course row", async () => {
     const threeOfferingsOneCourse = {
@@ -1812,7 +1812,7 @@ describe("OfferingBrowser", () => {
     expect(screen.getByText(/1 de 1/)).toBeInTheDocument();
   });
 
-  // ─── #14: Remove "Requisitos pendientes" badge, keep BlockedReasons chips ─────
+  // ─── Remove "Requisitos pendientes" badge, keep BlockedReasons chips ─────────
 
   it("#14: blocked course has NO 'Requisitos pendientes' badge but DOES show 'Te falta aprobar:' chips", async () => {
     server.use(

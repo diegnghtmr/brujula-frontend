@@ -5,7 +5,7 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Skeleton — decorative loading placeholder (DESIGN §6.15).
+ * Skeleton — decorative loading placeholder.
  *
  * Renders an animated `bg-muted` bar. Respects `prefers-reduced-motion`
  * via `motion-reduce:animate-none`. The element is `aria-hidden` by default

@@ -1,5 +1,5 @@
 /**
- * S1-G-1: Login flow — clicking login triggers navigation to the backend
+ * Login flow — clicking login triggers navigation to the backend
  * OIDC authorization endpoint. Logout calls POST /auth/logout and clears client state.
  */
 
@@ -24,7 +24,7 @@ function createWrapper() {
     );
 }
 
-describe("LoginPage (S1-G-1)", () => {
+describe("LoginPage", () => {
   it("renders a login button", () => {
     render(<LoginPage />, { wrapper: createWrapper() });
     expect(screen.getByRole("button", { name: /iniciar sesión/i })).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("LoginPage (S1-G-1)", () => {
   });
 });
 
-describe("LogoutButton (S1-G-1)", () => {
+describe("LogoutButton", () => {
   it("renders a logout button in authenticated shell", async () => {
     server.use(
       http.get("/api/v1/me", () => {

@@ -1,5 +1,5 @@
 /**
- * SimulationDetailPage — FE-003 through FE-007
+ * SimulationDetailPage
  *
  * weeklySchedule + creditSummary + validation sections render.
  * addSelection 409 shows the error with metadata detail.
@@ -187,7 +187,7 @@ describe("SimulationDetailPage", () => {
     expect(advisory).toBeInTheDocument();
   });
 
-  // ─── Task 8: Selections grouped by semester ───────────────────────────────────
+  // ─── Selections grouped by semester ──────────────────────────────────────────
 
   it("selections panel shows semester subheadings in ascending order when curriculum data is available", async () => {
     const twoSelectionDetail = {

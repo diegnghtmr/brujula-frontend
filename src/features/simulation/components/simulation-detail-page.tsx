@@ -1,14 +1,14 @@
 /**
- * SimulationDetailPage — FE-003..007, SIM-003
+ * SimulationDetailPage
  *
  * Route: /simulations/:simulationId
  *
  * Assembles:
- * - OutdatedBanner (STALE-001/STALE-002)
- * - WeeklyScheduleGrid (DET-001)
- * - CreditSummaryPanel (DET-002)
- * - ValidationNoticeList (DET-003/FE-006)
- * - OfferingBrowser (FE-002/FE-003)
+ * - OutdatedBanner
+ * - WeeklyScheduleGrid
+ * - CreditSummaryPanel
+ * - ValidationNoticeList
+ * - OfferingBrowser
  * - Selections list grouped by semester (ascending), sorted by courseName within each group
  */
 
@@ -213,7 +213,7 @@ function SelectionsWithCurriculum({
         </div>
       </header>
 
-      {/* OUTDATED banner — FE-007 */}
+      {/* OUTDATED banner */}
       {detail.status === "OUTDATED" && simulationId && (
         <div className="mb-6">
           <OutdatedBanner
@@ -224,7 +224,7 @@ function SelectionsWithCurriculum({
         </div>
       )}
 
-      {/* Validation notices — FE-006 */}
+      {/* Validation notices */}
       {detail.validation && (
         <div className="mb-6">
           <ValidationNoticeList validation={detail.validation} />
@@ -234,7 +234,7 @@ function SelectionsWithCurriculum({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column: schedule + selections */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Weekly schedule grid — FE-004 */}
+          {/* Weekly schedule grid */}
           <section aria-labelledby="schedule-heading">
             <h2 id="schedule-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
               Horario semanal
@@ -271,7 +271,7 @@ function SelectionsWithCurriculum({
             </section>
           )}
 
-          {/* Offering browser — FE-002 */}
+          {/* Offering browser */}
           <section aria-labelledby="offerings-heading">
             <h2 id="offerings-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
               Explorar ofertas
@@ -287,7 +287,7 @@ function SelectionsWithCurriculum({
 
         {/* Right column: credit summary */}
         <div className="flex flex-col gap-6">
-          {/* Credit summary — FE-005 */}
+          {/* Credit summary */}
           {detail.creditSummary && detail.creditSummary.length > 0 && (
             <section aria-labelledby="credits-heading">
               <h2 id="credits-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">

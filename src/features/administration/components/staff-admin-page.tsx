@@ -1,12 +1,12 @@
 /**
- * S2-F-5: StaffAdminPage — admin screen for staff account management.
+ * StaffAdminPage — admin screen for staff account management.
  * Route: /admin/staff (ADMIN-gated via RequireRole).
  *
  * Design contract:
  * - Lists staff accounts (GET /admin/staff).
  * - Creates staff (POST with fresh Idempotency-Key per submit + X-XSRF-TOKEN via interceptor).
  * - Deactivates staff (PATCH) with confirmation dialog.
- * - Academic state indicators: status shown with color + icon + label (not color alone).
+ * - Status shown with color + icon + label (not color alone).
  * - RequireRole("ADMIN") guard.
  * - WCAG 2.2 AA.
  */
@@ -47,7 +47,7 @@ const STATUS_CONFIG = {
   ACTIVE: {
     label: "Activo",
     icon: "●",
-    // §8 / FIX 2: icon carries the semantic color; label uses text-foreground (≥4.5:1)
+    // Icon carries the semantic color; label uses text-foreground (≥4.5:1 WCAG AA)
     iconClassName: "text-success",
     labelClassName: "text-foreground",
   },

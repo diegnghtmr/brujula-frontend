@@ -1,5 +1,5 @@
 /**
- * SimulationCreateForm — FE-001, SIM-001
+ * SimulationCreateForm
  *
  * Route: /simulations/new
  *
@@ -144,7 +144,7 @@ function SimulationCreateForm() {
           role="alert"
           className={cn(
             "mb-4 p-3 text-sm border rounded",
-            // §2.4: API error → destructive-subtle
+            // API error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >

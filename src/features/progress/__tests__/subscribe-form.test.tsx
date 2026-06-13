@@ -1,14 +1,14 @@
 /**
- * WU5-T02: SubscribeForm
+ * SubscribeForm
  *
  * Spec scenarios:
- * SUB-1-HP: renders program/plan/journey selectors; submits POST /me/subscriptions with
- *            Idempotency-Key (uuidv4); navigates to /progress/subscriptions on 201.
- * SUB-1-CAP: shows 409 error (cap or duplicate) to the user.
- * SUB-1-JOURNEYS: journey dropdown is populated from GET /api/v1/journeys (not plan.applicableJourneys).
- * SUB-1-JOURNEYS-ERR: when GET /api/v1/journeys returns 500, shows role="alert" notice.
+ * - Renders program/plan/journey selectors; submits POST /me/subscriptions with
+ *   Idempotency-Key (uuidv4); navigates to /progress/subscriptions on 201.
+ * - Shows 409 error (cap or duplicate) to the user.
+ * - Journey dropdown is populated from GET /api/v1/journeys (not plan.applicableJourneys).
+ * - When GET /api/v1/journeys returns 500, shows role="alert" notice.
  *
- * CRITICAL (Fase-2 C-2): EVERY query/mutation the component fires must have an MSW handler.
+ * CRITICAL: EVERY query/mutation the component fires must have an MSW handler.
  * This form fires:
  *   GET /api/v1/programs           (program selector)
  *   GET /api/v1/programs/:id/plans (plan options, after program selected)

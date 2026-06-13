@@ -1,5 +1,5 @@
 /**
- * S1-G-2: CSRF axios wiring — proves XSRF-TOKEN cookie is read and X-XSRF-TOKEN
+ * CSRF axios wiring — proves XSRF-TOKEN cookie is read and X-XSRF-TOKEN
  * header is injected on mutating requests; GET leaves it absent.
  */
 
@@ -29,7 +29,7 @@ function clearAllCookies() {
   }
 }
 
-describe("CSRF axios interceptor (S1-G-2)", () => {
+describe("CSRF axios interceptor", () => {
   beforeEach(() => {
     clearAllCookies();
   });

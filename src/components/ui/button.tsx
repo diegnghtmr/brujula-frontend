@@ -2,7 +2,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-// DESIGN §7.3 override: Button uses rounded-full
+// Button uses rounded-full (overrides shadcn default)
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   {
@@ -20,7 +20,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        // §6.1/§8: WCAG 2.2 AA minimum 44px touch target
+        // WCAG 2.2 AA minimum 44px touch target
         default: "h-11 px-6 py-2",
         sm: "h-8 rounded-full px-3 text-xs",
         lg: "h-12 rounded-full px-8",

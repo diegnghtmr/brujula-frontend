@@ -1,11 +1,10 @@
 /**
- * S1-G-4: useCurrentUser — TanStack Query hook for the authenticated user profile.
+ * useCurrentUser — TanStack Query hook for the authenticated user profile.
  *
- * Design contract (TRD §7 / Design §7):
- * - Backend is the source of auth truth — queries /me via generated ProfileApi.
- * - Zustand is for UI-only state; auth truth lives here via TanStack Query.
- * - 401 response → isError true, isAuthenticated false.
- * - staleTime 60s: /me is stable for the session window.
+ * Backend is the source of auth truth — queries /me via generated ProfileApi.
+ * Zustand is for UI-only state; auth truth lives here via TanStack Query.
+ * 401 response → isError true, isAuthenticated false.
+ * staleTime 60s: /me is stable for the session window.
  */
 
 import { useQuery } from "@tanstack/react-query";

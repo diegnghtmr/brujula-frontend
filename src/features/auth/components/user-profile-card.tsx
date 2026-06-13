@@ -1,6 +1,6 @@
 /**
- * S1-G-5: UserProfileCard — renders authenticated user's profile data from /me.
- * Styled via DESIGN tokens only. Light + dark theme support.
+ * UserProfileCard — renders authenticated user's profile data from /me.
+ * Styled via design tokens only. Light + dark theme support.
  */
 
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";

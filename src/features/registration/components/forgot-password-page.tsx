@@ -1,7 +1,7 @@
 /**
- * S2-F-3: ForgotPasswordPage — password recovery initiation (/forgot-password).
+ * ForgotPasswordPage — password recovery initiation (/forgot-password).
  *
- * Architecture (obs #1574, Option A / DT-011):
+ * Architecture:
  * POST /auth/password-recovery → Keycloak sends execute-actions-email [UPDATE_PASSWORD].
  * Keycloak handles the actual reset form. No /reset-password page in this SPA.
  *

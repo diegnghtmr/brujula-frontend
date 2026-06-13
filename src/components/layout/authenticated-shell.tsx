@@ -1,12 +1,11 @@
 /**
  * AuthenticatedShell — layout wrapper for authenticated routes.
- * Includes the mandatory DisclaimerBanner (DESIGN §6.13 / Spec) and a
- * minimal header with the logout action.
+ * Includes the mandatory DisclaimerBanner and a minimal header with the logout action.
  *
  * All authenticated pages are wrapped in this shell.
- * Styling resolves against DESIGN tokens only. Light + dark support.
+ * Styling resolves against design tokens only. Light + dark support.
  *
- * A11Y (QAL-A11Y-002-S2): skip-to-content link is the first focusable element.
+ * A11Y: skip-to-content link is the first focusable element.
  * Visually hidden until focused so it does not intrude on the visual design.
  * Activating it moves focus to #main-content (the <main> landmark).
  */
@@ -25,7 +24,7 @@ interface AuthenticatedShellProps {
 function AuthenticatedShell({ children }: AuthenticatedShellProps) {
   return (
     <div className={cn("min-h-screen flex flex-col", "bg-background")}>
-      {/* Skip-to-content — visually hidden until focused (WCAG 2.4.1 / QAL-A11Y-002-S2) */}
+      {/* Skip-to-content — visually hidden until focused (WCAG 2.4.1) */}
       <a
         href="#main-content"
         className={cn(
@@ -39,7 +38,7 @@ function AuthenticatedShell({ children }: AuthenticatedShellProps) {
         Ir al contenido principal
       </a>
 
-      {/* Mandatory disclaimer banner — always visible per session (DESIGN §6.13) */}
+      {/* Mandatory disclaimer banner — always visible per session */}
       <DisclaimerBanner />
 
       {/* App header */}

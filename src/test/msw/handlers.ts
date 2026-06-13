@@ -3,9 +3,8 @@ import { http, HttpResponse } from "msw";
 /**
  * MSW request handlers for tests.
  * These mock the generated API endpoints so tests don't need a running backend.
- * Slice-2 handlers added for: registration, email verification, password recovery,
- * admin allowed-email-domains, admin staff.
- * Fase-4 (WU6) handlers added for: simulation CRUD, offerings, periods.
+ * Handlers cover: registration, email verification, password recovery,
+ * admin allowed-email-domains, admin staff, simulation CRUD, offerings, periods.
  */
 export const handlers = [
   // Health endpoint smoke mock
@@ -103,7 +102,7 @@ export const handlers = [
     });
   }),
 
-  // ---- Fase-4 WU6: Simulation CRUD + Offerings + Periods ----
+  // ---- Simulation CRUD + Offerings + Periods ----
 
   // GET /me/subscriptions — student program subscriptions (global fallback; inline server.use() overrides take precedence)
   http.get("/api/v1/me/subscriptions", () => {

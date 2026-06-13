@@ -18,11 +18,11 @@ interface ThemeProviderProps {
 
 /**
  * ThemeProvider — light/dark via .dark class on <html>.
- * DESIGN §8: persist user preference in localStorage,
- * initialize from prefers-color-scheme when no stored preference exists.
+ * Persists user preference in localStorage,
+ * initializes from prefers-color-scheme when no stored preference exists.
  *
- * WU-1 Fix C: theme switch is now atomic — no staggered repaint.
- * C-2 Fix: useEffect cleanup cancels pending rAFs and removes theme-no-transitions
+ * Theme switch is atomic — no staggered repaint.
+ * useEffect cleanup cancels pending rAFs and removes theme-no-transitions
  * on unmount or rapid re-run, preventing stale callbacks from running.
  */
 function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
@@ -38,7 +38,7 @@ function ThemeProvider({ children, defaultTheme }: ThemeProviderProps) {
   });
 
   // Apply theme class on mount and whenever theme state changes.
-  // Technique (WU-1 Fix C / C-2):
+  // Technique: atomic theme switch via double-rAF.
   // 1. Add `theme-no-transitions` to <html> — CSS rule disables ALL transitions.
   // 2. Flip the `.dark` / `.light` class on <html>.
   // 3. Remove `theme-no-transitions` after a double-rAF (safest cross-browser approach).

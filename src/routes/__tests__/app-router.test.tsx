@@ -1,5 +1,5 @@
 /**
- * S2-F-6: App routing — slice-2 routes registration.
+ * App routing — route registration.
  *
  * Spec scenarios:
  * 1. /register renders RegistrationPage (public).
@@ -8,7 +8,7 @@
  * 4. /admin/staff → RequireRole(ADMIN) → StaffAdminPage.
  * 5. /admin/allowed-domains → RequireRole(ADMIN) → AllowedDomainsAdminPage.
  *
- * Fase-2 CAT-001 auth guard scenarios:
+ * Catalog auth guard scenarios:
  * 6. /catalog/programs unauthenticated → redirects to /login.
  * 7. /catalog/programs authenticated → renders ProgramListPage content.
  * 8. /catalog/plans/:planId unauthenticated → redirects to /login.
@@ -26,7 +26,7 @@ import { AppRoutes } from "@/routes/index";
 import { vi } from "vitest";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
-describe("App routing slice-2 (S2-F-6)", () => {
+describe("App routing — slice-2", () => {
   it("/register route exists and renders RegistrationPage content", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -180,7 +180,7 @@ const localStorageMock = (() => {
   };
 })();
 
-describe("App routing — Fase-2 catalog/curriculum auth guards (CAT-001)", () => {
+describe("App routing — catalog/curriculum auth guards", () => {
   beforeEach(() => {
     vi.stubGlobal("localStorage", localStorageMock);
     localStorageMock.clear();

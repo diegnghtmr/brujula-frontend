@@ -1,5 +1,5 @@
 /**
- * S1-G-3: RequireAuth route guard.
+ * RequireAuth route guard.
  * Tests: unauthenticated redirect, authenticated render, loading state.
  */
 
@@ -38,7 +38,7 @@ function AppRoutes() {
   );
 }
 
-describe("RequireAuth route guard (S1-G-3)", () => {
+describe("RequireAuth route guard", () => {
   it("redirects to /login when /me returns 401 (unauthenticated)", async () => {
     server.use(
       http.get("/api/v1/me", () => {

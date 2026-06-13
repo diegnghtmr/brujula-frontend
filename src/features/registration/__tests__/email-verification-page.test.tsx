@@ -1,7 +1,7 @@
 /**
- * S2-F-2: EmailVerificationPage — landing screen after email verification.
+ * EmailVerificationPage — landing screen after email verification.
  *
- * Architecture note (obs #1574 - G-KC-VERIFY-FLOW resolved):
+ * Architecture note:
  * Keycloak handles verification natively. The user clicks the email link → Keycloak's page
  * → redirects to SPA. This page shows instructions + a "reenviar" action.
  * There is NO token-confirm form here.

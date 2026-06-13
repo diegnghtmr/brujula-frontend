@@ -1,7 +1,7 @@
 /**
- * S2-F-3: ForgotPasswordPage — password recovery initiation screen (/forgot-password).
+ * ForgotPasswordPage — password recovery initiation screen (/forgot-password).
  *
- * Architecture (obs #1574, Option A / DT-011):
+ * Architecture:
  * The backend initiates Keycloak execute-actions-email [UPDATE_PASSWORD].
  * Keycloak handles the reset page natively. No /reset-password page in the SPA.
  *

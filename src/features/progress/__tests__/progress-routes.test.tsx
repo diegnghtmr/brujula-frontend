@@ -1,13 +1,13 @@
 /**
- * WU5: Progress routes — RequireAuth guard verification.
+ * Progress routes — RequireAuth guard verification.
  *
- * Spec: Fase-2 C-1 lesson: every new route MUST be wrapped in RequireAuth + AuthenticatedShell.
+ * Every route must be wrapped in RequireAuth + AuthenticatedShell.
  * An unauthenticated visit to a progress route must redirect to /login.
  *
- * FIX-W-1: tests now positively assert the login route rendered (not just content absence),
+ * Tests positively assert the login route rendered (not just content absence),
  * so these tests would fail if the RequireAuth guard were removed.
  *
- * FIX-S-1: added guard + render coverage for the two parametric routes
+ * Covers guard + render for the parametric routes
  * /progress/subscriptions/:subscriptionId/declare and /progress/subscriptions/:subscriptionId/progress.
  */
 

@@ -43,19 +43,19 @@ const ATTEMPT_STATUS_CONFIG = {
   PASSED: {
     label: "Aprobada",
     textIcon: "✓",
-    // §2.4: aprobada → state-aprobada (solid badge per §6.3)
+    // Aprobada → state-aprobada (solid badge)
     className: "bg-state-aprobada text-state-aprobada-foreground border-transparent",
   },
   FAILED: {
     label: "Reprobada",
     textIcon: "✕",
-    // §2.4: reprobada → state-reprobada
+    // Reprobada → state-reprobada
     className: "bg-state-reprobada text-state-reprobada-foreground border-transparent",
   },
   CANCELLED: {
     label: "Cancelada",
     textIcon: "∅",
-    // §2.4: cancelada → state-cancelada
+    // Cancelada → state-cancelada
     className: "bg-state-cancelada text-state-cancelada-foreground border-transparent",
   },
 } as const;
@@ -203,7 +203,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            // §2.4: 409 conflict (advertencia recuperable) → warning-subtle
+            // 409 conflict (recoverable warning) → warning-subtle
             "bg-warning-subtle text-warning-subtle-foreground border-transparent"
           )}
         >
@@ -216,7 +216,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            // §2.4: API error → destructive-subtle
+            // API error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -229,7 +229,7 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
           role="alert"
           className={cn(
             "p-2 text-xs border rounded",
-            // §2.4: load error → destructive-subtle
+            // Load error → destructive-subtle
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -414,7 +414,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
   return (
     <li
       className={cn(
-        // §6.4/§5.1: content tile → rounded-none
+        // Content tile → rounded-none
         "p-4 border rounded-none bg-card border-border",
         "flex flex-col gap-2"
       )}
@@ -444,7 +444,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
             </span>
             <AttemptStatusBadge status={attempt.status} />
             {attempt.finalGrade != null && (
-              // §3.1/§9: tabular-nums for grade values
+              // Tabular-nums for grade values
               <span className="text-xs text-foreground font-medium tabular-nums">
                 {attempt.finalGrade.toFixed(1)}
               </span>
@@ -472,7 +472,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
               onClick={() => setConfirmDelete(true)}
               className={cn(
                 "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
-                // §6.1/§2.3: destructive action outline style
+                // Destructive action outline style
                 "border-destructive text-destructive hover:bg-destructive-subtle"
               )}
             >
@@ -487,7 +487,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
         <div
           className={cn(
             "flex items-center gap-3 p-2 border rounded",
-            // §2.3: destructive-subtle for the confirmation container
+            // Destructive-subtle for the confirmation container
             "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
           )}
         >
@@ -501,7 +501,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
             disabled={deleteMutation.isPending}
             className={cn(
               "px-2.5 py-1 text-xs font-medium rounded border transition-colors",
-              // §6.1/§2.3: destructive solid button for confirm action
+              // Destructive solid button for confirm action
               "bg-destructive text-destructive-foreground border-transparent hover:opacity-90",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
