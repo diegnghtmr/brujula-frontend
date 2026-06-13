@@ -32,7 +32,7 @@ interface OfferingFilterBarProps {
 // ─── CourseType labels — full map for reference ───────────────────────────────
 
 const COURSE_TYPE_LABELS: Record<string, string> = {
-  REQUIRED: "Obligatoria",
+  REQUIRED: "Núcleo común",
   PERSONAL_ELECTIVE: "Electiva personal",
   DEEPENING: "Profundización",
   DEGREE_WORK: "Trabajo de grado",
@@ -122,8 +122,8 @@ function OfferingFilterBar({
         </p>
       </div>
 
-      {/* Row 2: selects group */}
-      <div className="flex flex-wrap gap-2 items-end">
+      {/* Row 2: selects group — equal-width grid cells */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-end">
         {/* Semester selector — options from curriculum data */}
         <div className="flex flex-col gap-0.5">
           <label htmlFor="offering-semester" className="text-xs text-muted-foreground">
@@ -137,7 +137,7 @@ function OfferingFilterBar({
               onChange({ semester: val === "" ? null : Number.parseInt(val, 10) });
             }}
             className={cn(
-              "h-8 min-w-[8.5rem] px-2 text-sm rounded border border-input bg-background",
+              "h-8 w-full px-2 text-sm rounded border border-input bg-background",
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             )}
             aria-label="Semestre"
@@ -156,7 +156,7 @@ function OfferingFilterBar({
           <label htmlFor="offering-min-credits" className="text-xs text-muted-foreground">
             Créditos
           </label>
-          <div className="flex items-center gap-1">
+          <div className="flex gap-1">
             <input
               id="offering-min-credits"
               type="number"
@@ -169,7 +169,7 @@ function OfferingFilterBar({
               }}
               placeholder="mín"
               className={cn(
-                "h-8 w-16 px-2 text-sm rounded border border-input bg-background text-center",
+                "h-8 w-full flex-1 px-2 text-sm rounded border border-input bg-background text-center",
                 "placeholder:text-muted-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0",
                 "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -188,7 +188,7 @@ function OfferingFilterBar({
               }}
               placeholder="máx"
               className={cn(
-                "h-8 w-16 px-2 text-sm rounded border border-input bg-background text-center",
+                "h-8 w-full flex-1 px-2 text-sm rounded border border-input bg-background text-center",
                 "placeholder:text-muted-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0",
                 "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -211,7 +211,7 @@ function OfferingFilterBar({
               onChange({ type: val === "" ? null : val });
             }}
             className={cn(
-              "h-8 min-w-[8.5rem] px-2 text-sm rounded border border-input bg-background",
+              "h-8 w-full px-2 text-sm rounded border border-input bg-background",
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
             )}
             aria-label="Tipo de materia"
@@ -239,7 +239,7 @@ function OfferingFilterBar({
                 onChange({ program: val === "" ? null : val });
               }}
               className={cn(
-                "h-8 min-w-[8.5rem] px-2 text-sm rounded border border-input bg-background",
+                "h-8 w-full px-2 text-sm rounded border border-input bg-background",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
               )}
               aria-label="Carrera"
@@ -268,7 +268,7 @@ function OfferingFilterBar({
                 onChange({ jornada: val === "" ? null : val });
               }}
               className={cn(
-                "h-8 min-w-[8.5rem] px-2 text-sm rounded border border-input bg-background",
+                "h-8 w-full px-2 text-sm rounded border border-input bg-background",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0"
               )}
               aria-label="Jornada"

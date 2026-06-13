@@ -51,11 +51,11 @@ describe("OfferingFilterBar — type options (Task 2)", () => {
     expect(options.map((o) => o.textContent)).not.toContain("Optativa");
   });
 
-  it("REQUIRED (Obligatoria) option IS in the type select", () => {
+  it("REQUIRED (Núcleo común) option IS in the type select", () => {
     renderBar();
     const typeSelect = screen.getByLabelText(/tipo de materia/i);
     const options = [...typeSelect.querySelectorAll("option")];
-    expect(options.map((o) => o.textContent)).toContain("Obligatoria");
+    expect(options.map((o) => o.textContent)).toContain("Núcleo común");
   });
 
   it("PERSONAL_ELECTIVE (Electiva personal) option IS in the type select", () => {
