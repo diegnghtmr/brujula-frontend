@@ -4,6 +4,7 @@
 
 import type { SimulationSelection } from "@/api/generated/models/simulation-selection";
 import { cn } from "@/lib/utils";
+import { weekdayEs } from "../lib/weekday-es";
 
 interface SelectionRowProps {
   simulationId: string;
@@ -14,7 +15,7 @@ interface SelectionRowProps {
 
 function SelectionRow({ selection, onRemove, isRemoving }: SelectionRowProps) {
   const sessionSummary = selection.sessions
-    .map((s) => `${s.day?.slice(0, 3)} ${s.startsAt}–${s.endsAt}`)
+    .map((s) => `${weekdayEs(s.day)} ${s.startsAt}–${s.endsAt}`)
     .join(", ");
 
   // §6.4/§5.1: content tile → rounded-none

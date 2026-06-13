@@ -186,4 +186,98 @@ describe("SimulationDetailPage", () => {
     const advisory = screen.getByText(/se recomienda/i);
     expect(advisory).toBeInTheDocument();
   });
+
+  // ─── Task 8: Selections grouped by semester ───────────────────────────────────
+
+  it("selections panel shows semester subheadings in ascending order when curriculum data is available", async () => {
+    const twoSelectionDetail = {
+      ...SIMULATION_DETAIL,
+      selections: [
+        {
+          id: "sel-a",
+          offeringId: "off-a",
+          scheduleOptionId: "opt-a",
+          courseId: "course-sem3",
+          courseName: "Estructuras de Datos",
+          programId: "prog-1",
+          credits: 4,
+          journeyCode: "DIURNA",
+          offeringStatus: "FINAL",
+          selectedOfferingVersion: 1,
+          sessions: [],
+          warnings: [],
+        },
+        {
+          id: "sel-b",
+          offeringId: "off-b",
+          scheduleOptionId: "opt-b",
+          courseId: "course-sem1",
+          courseName: "Lógica de Programación",
+          programId: "prog-1",
+          credits: 3,
+          journeyCode: "DIURNA",
+          offeringStatus: "FINAL",
+          selectedOfferingVersion: 1,
+          sessions: [],
+          warnings: [],
+        },
+      ],
+      scopeEntries: [{ programId: "prog-1", journeyCode: "DIURNA" }],
+    };
+
+    const subscriptions = [
+      { id: "sub-task8", programId: "prog-1", programName: "Ingeniería de Sistemas", planId: "p1", planName: "Plan 2020", referenceJourney: { id: "j-d", code: "DIURNA", name: "Diurna" }, version: 1, createdAt: "2025-01-01T00:00:00Z" },
+    ];
+
+    const curriculum = {
+      subscriptionId: "sub-task8",
+      referenceJourney: { id: "j-d", code: "DIURNA", name: "Diurna" },
+      semesters: [
+        { recommendedSemester: 1, courses: [{ courseId: "course-sem1", officialCode: "LOG1", name: "Lógica de Programación", credits: 3, type: "REQUIRED", progressStatus: "AVAILABLE", unmetRequirements: [] }] },
+        { recommendedSemester: 3, courses: [{ courseId: "course-sem3", officialCode: "ED3", name: "Estructuras de Datos", credits: 4, type: "REQUIRED", progressStatus: "AVAILABLE", unmetRequirements: [] }] },
+      ],
+    };
+
+    server.use(
+      http.get(`/api/v1/me/simulations/${SIMULATION_ID}`, () => HttpResponse.json(twoSelectionDetail)),
+      http.get("/api/v1/me/subscriptions", () => HttpResponse.json(subscriptions)),
+      http.get("/api/v1/me/subscriptions/sub-task8/curriculum", () => HttpResponse.json(curriculum)),
+      http.get("/api/v1/offerings", () => HttpResponse.json({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 }))
+    );
+
+    render(
+      <Routes>
+        <Route path="/simulations/:simulationId" element={<SimulationDetailPage />} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // Both selections visible
+    expect(await screen.findByText("Estructuras de Datos")).toBeInTheDocument();
+    expect(screen.getByText("Lógica de Programación")).toBeInTheDocument();
+
+    // Wait for curriculum data to load so semester groups are computed
+    // (useCurriculumMap is async; the groups update after curriculum resolves)
+    await waitFor(() => {
+      const selectionsSection = screen.getByRole("region", { name: /materias seleccionadas/i });
+      expect(selectionsSection).toHaveTextContent("Semestre 1");
+      expect(selectionsSection).toHaveTextContent("Semestre 3");
+    });
+
+    // Both semester subheadings present in the selections section
+    const selectionsSection = screen.getByRole("region", { name: /materias seleccionadas/i });
+    expect(selectionsSection).toHaveTextContent("Semestre 1");
+    expect(selectionsSection).toHaveTextContent("Semestre 3");
+
+    // Semestre 1 heading appears before Semestre 3 heading (ascending order)
+    const sem1 = screen.getByRole("heading", { name: "Semestre 1" });
+    const sem3 = screen.getByRole("heading", { name: "Semestre 3" });
+    expect(sem1.compareDocumentPosition(sem3)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    // Each course under correct semester
+    // Lógica de Programación (sem 1) should appear before Estructuras de Datos (sem 3)
+    const logica = screen.getByText("Lógica de Programación");
+    const estructuras = screen.getByText("Estructuras de Datos");
+    expect(logica.compareDocumentPosition(estructuras)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });
