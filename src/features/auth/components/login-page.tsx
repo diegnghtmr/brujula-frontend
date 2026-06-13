@@ -49,16 +49,9 @@ function LoginPage() {
           className="flex flex-col items-center gap-2 text-sm"
           aria-label="Accesos rápidos"
         >
-          <Link
-            to="/register"
-            className={cn(
-              "text-primary underline-offset-4 hover:underline",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "min-h-[44px] inline-flex items-center"
-            )}
-          >
-            Registrarse
-          </Link>
+          <Button asChild variant="outline" size="lg" className="w-full">
+            <Link to="/register">Registrarse</Link>
+          </Button>
           <Link
             to="/forgot-password"
             className={cn(

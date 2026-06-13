@@ -34,6 +34,8 @@ import { AuthenticatedShell } from "@/components/layout/authenticated-shell";
 import { RegistrationPage } from "@/features/registration/components/registration-page";
 import { EmailVerificationPage } from "@/features/registration/components/email-verification-page";
 import { ForgotPasswordPage } from "@/features/registration/components/forgot-password-page";
+import { TermsPage } from "@/features/registration/components/terms-page";
+import { PrivacyPage } from "@/features/registration/components/privacy-page";
 import { StaffAdminPage } from "@/features/administration/components/staff-admin-page";
 import { AllowedDomainsAdminPage } from "@/features/administration/components/allowed-domains-admin-page";
 import { ProgramListPage } from "@/features/catalog/components/program-list-page";
@@ -86,6 +88,8 @@ function AppRoutes() {
       <Route path="/register" element={<RegistrationPage />} />
       <Route path="/verify-email" element={<EmailVerificationPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/403-forbidden" element={<ForbiddenPage />} />
 
       {/* Protected routes — gated by RequireAuth */}

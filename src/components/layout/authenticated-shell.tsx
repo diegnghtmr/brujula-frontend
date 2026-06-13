@@ -45,7 +45,7 @@ function AuthenticatedShell({ children }: AuthenticatedShellProps) {
       {/* App header */}
       <header
         className={cn(
-          "sticky top-0 z-10 flex items-center justify-between",
+          "sticky top-0 z-40 flex items-center justify-between",
           "px-4 py-3 border-b border-border",
           "bg-background/95 backdrop-blur-sm"
         )}
