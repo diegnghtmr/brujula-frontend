@@ -31,6 +31,7 @@ import { useDeleteCourseAttempt } from "@/features/progress/hooks/use-delete-cou
 import { BackLink } from "@/components/layout/back-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const offeringsApi = createApiInstance(OfferingsApi);
 
@@ -174,18 +175,16 @@ function InlineEditForm({ attempt, subscriptionId, onClose }: InlineEditFormProp
         onError: (error: unknown) => {
           const axiosError = error as AxiosError;
           const status = axiosError.response?.status;
-          const detail = (axiosError.response?.data as { detail?: string } | undefined)?.detail;
           if (status === 409) {
             // Non-destructive: show notice, refetch list, keep form open with user values
             setConflictError(
-              detail ??
-                "Este registro cambió; recargá para ver la versión actual."
+              getApiErrorMessage(error, "Este registro cambió; recargá para ver la versión actual.")
             );
             queryClient.invalidateQueries({ queryKey: ["course-attempts", subscriptionId] });
-          } else if (status === 422) {
-            setApiError(detail ?? "La nota no es válida para el estado seleccionado.");
           } else {
-            setApiError("Ocurrió un error al actualizar el intento.");
+            setApiError(
+              getApiErrorMessage(error, "Ocurrió un error al actualizar el intento.")
+            );
           }
         },
       }
@@ -390,12 +389,26 @@ interface AttemptRowProps {
 function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const deleteMutation = useDeleteCourseAttempt();
 
   function handleDelete() {
-    deleteMutation.mutate({ attemptId: attempt.id, subscriptionId });
-    setConfirmDelete(false);
+    setDeleteError(null);
+    deleteMutation.mutate(
+      { attemptId: attempt.id, subscriptionId },
+      {
+        onSuccess: () => {
+          setConfirmDelete(false);
+        },
+        onError: (error: unknown) => {
+          setDeleteError(
+            getApiErrorMessage(error, "No se pudo eliminar el intento. Intentá nuevamente.")
+          );
+          setConfirmDelete(false);
+        },
+      }
+    );
   }
 
   return (
@@ -406,6 +419,19 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
         "flex flex-col gap-2"
       )}
     >
+      {/* Delete error alert */}
+      {deleteError && (
+        <div
+          role="alert"
+          className={cn(
+            "p-2 text-xs border rounded",
+            "bg-destructive-subtle text-destructive-subtle-foreground border-transparent"
+          )}
+        >
+          {deleteError}
+        </div>
+      )}
+
       {/* Row summary */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1 flex-1 min-w-0">

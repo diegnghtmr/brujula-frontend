@@ -17,12 +17,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, Link } from "react-router";
 import { SubscriptionsApi } from "@/api/generated/api/subscriptions-api";
 import { createApiInstance } from "@/api/client";
-import type { AxiosError } from "@/api/client";
 import type { Subscription } from "@/api/generated/models/subscription";
 import { useDeleteSubscription } from "@/features/progress/hooks/use-delete-subscription";
 import { BackLink } from "@/components/layout/back-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
 
@@ -50,12 +50,8 @@ function SubscriptionCard({ sub }: SubscriptionCardProps) {
           setConfirmDelete(false);
         },
         onError: (error: unknown) => {
-          const axiosError = error as AxiosError;
-          const detail = (
-            axiosError.response?.data as { detail?: string } | undefined
-          )?.detail;
           setDeleteError(
-            detail ?? "No se pudo dar de baja la suscripción. Intentá nuevamente."
+            getApiErrorMessage(error, "No se pudo dar de baja la suscripción. Intentá nuevamente.")
           );
           setConfirmDelete(false);
         },
@@ -219,6 +215,21 @@ function SubscriptionListPage() {
       subscriptionsApi.listMySubscriptions().then((r) => r.data),
   });
 
+  // Compute maxedOut: disabled only when 2 distinct programs AND each has 2 jornadas
+  const distinctPrograms = new Map<string, Set<string>>();
+  for (const sub of subscriptions ?? []) {
+    if (!distinctPrograms.has(sub.programId)) {
+      distinctPrograms.set(sub.programId, new Set());
+    }
+    const journeyCode = sub.referenceJourney?.code;
+    if (journeyCode) {
+      distinctPrograms.get(sub.programId)!.add(journeyCode);
+    }
+  }
+  const maxedOut =
+    distinctPrograms.size >= 2 &&
+    Array.from(distinctPrograms.values()).every((jornadas) => jornadas.size >= 2);
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <BackLink to="/dashboard" />
@@ -228,14 +239,14 @@ function SubscriptionListPage() {
             Mis suscripciones
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Programas académicos que estás planificando (máx. 2).
+            Programas académicos que estás planificando (máx. 2 carreras, 2 jornadas por carrera).
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => navigate("/progress/subscribe")}
-          disabled={(subscriptions?.length ?? 0) >= 2}
+          disabled={maxedOut}
           className={cn(
             "px-4 py-2 text-sm font-medium rounded border transition-colors",
             "bg-primary text-primary-foreground border-primary hover:opacity-90",

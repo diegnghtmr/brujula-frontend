@@ -29,6 +29,7 @@ import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const catalogApi = createApiInstance(CatalogApi);
 const subscriptionsApi = createApiInstance(SubscriptionsApi);
@@ -150,21 +151,9 @@ function SubscribeForm() {
       navigate("/progress/subscriptions");
     },
     onError: (error: AxiosError) => {
-      const status = error.response?.status;
-      const detail =
-        (error.response?.data as { detail?: string } | undefined)?.detail;
-
-      if (status === 409) {
-        setApiError(
-          detail ?? "Ya tenés el máximo de suscripciones activas o ya estás suscrito a este programa."
-        );
-      } else if (status === 422) {
-        setApiError(
-          detail ?? "El plan de estudios no está activo o los datos son inválidos."
-        );
-      } else {
-        setApiError("Ocurrió un error al suscribirse. Intentá nuevamente.");
-      }
+      setApiError(
+        getApiErrorMessage(error, "Ocurrió un error al suscribirse. Intentá nuevamente.")
+      );
     },
   });
 

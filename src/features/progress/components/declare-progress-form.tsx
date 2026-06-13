@@ -33,6 +33,7 @@ import { BackLink } from "@/components/layout/back-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CourseStatusBadge } from "./course-status-badge";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const progressApi = createApiInstance(ProgressApi);
 const offeringsApi = createApiInstance(OfferingsApi);
@@ -128,15 +129,9 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
       onClose();
     },
     onError: (error: AxiosError) => {
-      const status = error.response?.status;
-      const detail = (error.response?.data as { detail?: string } | undefined)?.detail;
-      if (status === 422) {
-        setApiError(detail ?? "La nota no es válida para el estado seleccionado.");
-      } else if (status === 409) {
-        setApiError(detail ?? "Conflicto al registrar el intento. Intentá nuevamente.");
-      } else {
-        setApiError("Ocurrió un error al registrar el intento.");
-      }
+      setApiError(
+        getApiErrorMessage(error, "Ocurrió un error al registrar el intento.")
+      );
     },
   });
 

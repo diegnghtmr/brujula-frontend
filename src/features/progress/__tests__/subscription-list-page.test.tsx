@@ -385,3 +385,169 @@ describe("SubscriptionListPage — Dar de baja (WU-1 Fix B)", () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// "+ Suscribirse" button — maxedOut logic (Problem 1 fix)
+// ---------------------------------------------------------------------------
+
+describe("SubscriptionListPage — + Suscribirse button enabled/disabled (Problem 1)", () => {
+  /**
+   * Fixture helpers — each subscription has programId and referenceJourney (jornada).
+   * Same programId = same program; same journeyCode = same jornada.
+   *
+   * maxedOut = distinctProgramCount >= 2 && every distinct program has >= 2 jornadas
+   */
+
+  // 2 rows for the SAME program (2 different jornadas) → button ENABLED
+  it("button is ENABLED when 2 rows belong to the same program (cap not reached)", async () => {
+    const subSameProg1 = {
+      id: "sub-sp1",
+      programId: "prog-A",
+      programName: "Ingeniería de Sistemas",
+      planId: "plan-A",
+      planName: "Plan 2020",
+      referenceJourney: { code: "DIURNA", name: "Diurna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const subSameProg2 = {
+      id: "sub-sp2",
+      programId: "prog-A",
+      programName: "Ingeniería de Sistemas",
+      planId: "plan-A",
+      planName: "Plan 2020",
+      referenceJourney: { code: "NOCTURNA", name: "Nocturna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+
+    server.use(
+      http.get("/api/v1/me/subscriptions", () =>
+        HttpResponse.json([subSameProg1, subSameProg2])
+      )
+    );
+
+    render(
+      <Routes>
+        <Route path="/progress/subscriptions" element={<SubscriptionListPage />} />
+        <Route path="/progress/subscribe" element={<div data-testid="subscribe-form">Form</div>} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // 2 cards for the same program name — use findAllByText
+    const programHeadings = await screen.findAllByText("Ingeniería de Sistemas");
+    expect(programHeadings).toHaveLength(2);
+
+    const subscribeBtn = screen.getByRole("button", { name: /\+ suscribirse/i });
+    expect(subscribeBtn).not.toBeDisabled();
+  });
+
+  // 2 distinct programs × 2 jornadas each (4 rows total) → button DISABLED
+  it("button is DISABLED when 2 distinct programs each have 2 jornadas (fully maxed out)", async () => {
+    const sub1 = {
+      id: "sub-1",
+      programId: "prog-A",
+      programName: "Ingeniería de Sistemas",
+      planId: "plan-A",
+      planName: "Plan 2020",
+      referenceJourney: { code: "DIURNA", name: "Diurna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const sub2 = {
+      id: "sub-2",
+      programId: "prog-A",
+      programName: "Ingeniería de Sistemas",
+      planId: "plan-A",
+      planName: "Plan 2020",
+      referenceJourney: { code: "NOCTURNA", name: "Nocturna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const sub3 = {
+      id: "sub-3",
+      programId: "prog-B",
+      programName: "Licenciatura en Matemáticas",
+      planId: "plan-B",
+      planName: "Plan 2021",
+      referenceJourney: { code: "DIURNA", name: "Diurna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const sub4 = {
+      id: "sub-4",
+      programId: "prog-B",
+      programName: "Licenciatura en Matemáticas",
+      planId: "plan-B",
+      planName: "Plan 2021",
+      referenceJourney: { code: "NOCTURNA", name: "Nocturna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+
+    server.use(
+      http.get("/api/v1/me/subscriptions", () =>
+        HttpResponse.json([sub1, sub2, sub3, sub4])
+      )
+    );
+
+    render(
+      <Routes>
+        <Route path="/progress/subscriptions" element={<SubscriptionListPage />} />
+        <Route path="/progress/subscribe" element={<div data-testid="subscribe-form">Form</div>} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // 4 cards: 2 for "Ingeniería de Sistemas" and 2 for "Licenciatura en Matemáticas"
+    const ingenieriaCards = await screen.findAllByText("Ingeniería de Sistemas");
+    expect(ingenieriaCards).toHaveLength(2);
+
+    const subscribeBtn = screen.getByRole("button", { name: /\+ suscribirse/i });
+    expect(subscribeBtn).toBeDisabled();
+  });
+
+  // 2 distinct programs but only 1 jornada each (2 rows total) → button ENABLED
+  it("button is ENABLED when 2 distinct programs each have only 1 jornada", async () => {
+    const subProgA = {
+      id: "sub-a",
+      programId: "prog-A",
+      programName: "Ingeniería de Sistemas",
+      planId: "plan-A",
+      planName: "Plan 2020",
+      referenceJourney: { code: "DIURNA", name: "Diurna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    const subProgB = {
+      id: "sub-b",
+      programId: "prog-B",
+      programName: "Licenciatura en Matemáticas",
+      planId: "plan-B",
+      planName: "Plan 2021",
+      referenceJourney: { code: "DIURNA", name: "Diurna" },
+      version: 0,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+
+    server.use(
+      http.get("/api/v1/me/subscriptions", () =>
+        HttpResponse.json([subProgA, subProgB])
+      )
+    );
+
+    render(
+      <Routes>
+        <Route path="/progress/subscriptions" element={<SubscriptionListPage />} />
+        <Route path="/progress/subscribe" element={<div data-testid="subscribe-form">Form</div>} />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Ingeniería de Sistemas");
+
+    const subscribeBtn = screen.getByRole("button", { name: /\+ suscribirse/i });
+    expect(subscribeBtn).not.toBeDisabled();
+  });
+});
