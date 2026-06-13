@@ -19,7 +19,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { http, HttpResponse } from "msw";
@@ -161,21 +161,29 @@ describe("DeclareProgressForm — Period picker (Slice B)", () => {
     const submitBtn = await screen.findByRole("button", { name: /guardar intento/i });
     expect(submitBtn).toBeDisabled();
 
-    // (2) Loading indicator option must be present ("Cargando períodos...")
-    expect(screen.getByText(/cargando períodos/i)).toBeInTheDocument();
+    // (2) Loading indicator must be present — shown as combobox placeholder
+    const periodsCombobox = screen.getByRole("combobox", { name: /período/i });
+    expect(periodsCombobox).toHaveAttribute("placeholder", expect.stringMatching(/cargando períodos/i));
 
     // --- RESOLVED STATE: release the gate → handler returns PERIODS_FIXTURE ---
     releasePeriods();
 
-    // Two periods from fixture must appear as options after resolution
+    // Wait for combobox to become enabled (periods loaded)
+    const periodSelect = screen.getByRole("combobox", { name: /período/i });
+    await waitFor(() => {
+      expect(periodSelect).not.toBeDisabled();
+    });
+
+    // Open combobox and verify periods appear as options
+    await user.click(periodSelect);
     await waitFor(() => {
       expect(screen.getByRole("option", { name: "2025-1" })).toBeInTheDocument();
       expect(screen.getByRole("option", { name: "2025-2" })).toBeInTheDocument();
     });
 
     // Select a period → submit must become enabled
-    const periodSelect = screen.getByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p1");
+    const optB31 = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optB31);
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /guardar intento/i })).not.toBeDisabled();
     });
@@ -206,11 +214,13 @@ describe("DeclareProgressForm — Period picker (Slice B)", () => {
     const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
     await user.click(declareBtn);
 
-    // Must show "No hay períodos disponibles"
-    await screen.findByText(/no hay períodos disponibles/i);
+    // Must show "No hay períodos disponibles" as placeholder
+    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
+    await waitFor(() => {
+      expect(periodSelect).toHaveAttribute("placeholder", expect.stringMatching(/no hay períodos disponibles/i));
+    });
 
-    // Select must be disabled
-    const periodSelect = screen.getByRole("combobox", { name: /período/i });
+    // Combobox must be disabled
     expect(periodSelect).toBeDisabled();
 
     // Submit must remain disabled
@@ -330,14 +340,15 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
 
     // Fill grade (PASSED requires grade)
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: /nota/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
     });
-    await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
-    await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "4.2");
+    fireEvent.change(screen.getByRole("textbox", { name: /nota/i }), { target: { value: "4.2" } });
 
-    // Select period from combobox (migrated from textbox type to selectOptions)
+    // Select period from combobox
     const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p1");
+    await user.click(periodSelect);
+    const option2025_1 = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(option2025_1);
 
     // Submit
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
@@ -397,14 +408,15 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
 
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: /nota/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
     });
-    await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
-    await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "2.5");
+    fireEvent.change(screen.getByRole("textbox", { name: /nota/i }), { target: { value: "2.5" } });
 
-    // Select period from combobox (migrated from textbox type)
+    // Select period from combobox
     const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p1");
+    await user.click(periodSelect);
+    const opt422 = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(opt422);
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -446,7 +458,7 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "CANCELLED");
 
     // Grade field must NOT be present when CANCELLED
-    expect(screen.queryByRole("spinbutton", { name: /nota/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /nota/i })).not.toBeInTheDocument();
   });
 
   it("submits POST with journeyCode from referenceJourney.code (NOCTURNA — not hardcoded)", async () => {
@@ -491,14 +503,15 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
 
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: /nota/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
     });
-    await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
-    await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "3.8");
+    fireEvent.change(screen.getByRole("textbox", { name: /nota/i }), { target: { value: "3.8" } });
 
-    // Select period from combobox (migrated from textbox type)
-    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p2");
+    // Select period from combobox
+    const periodSelectNoc = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectNoc);
+    const optNoc = await screen.findByRole("option", { name: "2025-2" });
+    await user.click(optNoc);
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -545,14 +558,15 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
 
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: /nota/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
     });
-    await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
-    await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "4.2");
+    fireEvent.change(screen.getByRole("textbox", { name: /nota/i }), { target: { value: "4.2" } });
 
-    // Select period from combobox (migrated from textbox type)
-    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p1");
+    // Select period from combobox
+    const periodSelectDiu = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectDiu);
+    const optDiu = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optDiu);
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -609,14 +623,15 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
 
     await waitFor(() => {
-      expect(screen.getByRole("spinbutton", { name: /nota/i })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
     });
-    await user.clear(screen.getByRole("spinbutton", { name: /nota/i }));
-    await user.type(screen.getByRole("spinbutton", { name: /nota/i }), "3.5");
+    fireEvent.change(screen.getByRole("textbox", { name: /nota/i }), { target: { value: "3.5" } });
 
-    // Select period from combobox (migrated from textbox type)
-    const periodSelect = await screen.findByRole("combobox", { name: /período/i });
-    await user.selectOptions(periodSelect, "period-p1");
+    // Select period from combobox
+    const periodSelect409 = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelect409);
+    const opt409 = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(opt409);
 
     await user.click(screen.getByRole("button", { name: /guardar intento/i }));
 
@@ -626,5 +641,357 @@ describe("DeclareProgressForm (PRG-1-HP)", () => {
         /conflicto|Ya existe|intento registrado/i
       );
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Grade field validation (Change 3)
+// ---------------------------------------------------------------------------
+
+describe("DeclareProgressForm — grade field validation (Change 3)", () => {
+  /** Open the inline form for c-1 and return the grade input. */
+  async function openFormAndGetGradeInput(user: ReturnType<typeof userEvent.setup>) {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+    });
+
+    // Default status is PASSED → grade field is visible
+    return screen.getByRole("textbox", { name: /nota/i });
+  }
+
+  it("typing alphabetic characters into grade input does not set a non-numeric value", async () => {
+    // The input onChange filter must strip non-numeric characters so the field
+    // stays empty (or retains its previous valid value) when letters are typed.
+    const user = userEvent.setup();
+    const gradeInput = await openFormAndGetGradeInput(user);
+
+    fireEvent.change(gradeInput, { target: { value: "abc" } });
+
+    // After firing change with letters, field value must not be "abc" — filter strips it.
+    expect((gradeInput as HTMLInputElement).value).not.toBe("abc");
+    expect((gradeInput as HTMLInputElement).value).not.toMatch(/[a-zA-Z]/);
+  });
+
+  it("typing '4.5' is accepted as a valid grade", async () => {
+    const user = userEvent.setup();
+    const gradeInput = await openFormAndGetGradeInput(user);
+
+    fireEvent.change(gradeInput, { target: { value: "4.5" } });
+
+    expect((gradeInput as HTMLInputElement).value).toBe("4.5");
+  });
+
+  it("typing '5.5' (above max) is rejected or clamped — value must be ≤ 5", async () => {
+    const user = userEvent.setup();
+    const gradeInput = await openFormAndGetGradeInput(user);
+
+    fireEvent.change(gradeInput, { target: { value: "5.5" } });
+
+    // Value must not remain "5.5" — it should be clamped or stripped to ≤ 5
+    const val = parseFloat((gradeInput as HTMLInputElement).value);
+    if (!isNaN(val)) {
+      expect(val).toBeLessThanOrEqual(5);
+    }
+    // If the implementation leaves it empty that's also acceptable (rejected)
+  });
+
+  it("submitting PASSED status with empty grade shows a validation error", async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+    });
+
+    // Select PASSED and leave grade empty
+    await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
+
+    const gradeInput = screen.getByRole("textbox", { name: /nota/i });
+    await user.clear(gradeInput);
+
+    // Select a valid period so that's not the blocking issue
+    const periodSelectGV = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectGV);
+    const optGV = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optGV);
+
+    await user.click(screen.getByRole("button", { name: /guardar intento/i }));
+
+    // A validation error message must appear for the grade field (in the destructive <p> element)
+    await waitFor(() => {
+      const errorEls = screen.getAllByText(/nota válida|nota.*entre|0\.0.*5\.0|5\.0.*0\.0|nota.*requerida|ingresá/i);
+      // At least one must be the red error paragraph (not the label)
+      const errorParagraph = errorEls.find((el) => el.tagName === "P");
+      expect(errorParagraph).toBeTruthy();
+    });
+  });
+
+  it("submitting CANCELLED status with empty grade does NOT show a grade validation error", async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
+      http.post("/api/v1/me/course-attempts", async () =>
+        HttpResponse.json({ id: "a-x", status: "CANCELLED" }, { status: 201 })
+      )
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+    });
+
+    // Select CANCELLED — grade field should be hidden (no grade required)
+    await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "CANCELLED");
+
+    // Grade field must be absent
+    expect(screen.queryByRole("textbox", { name: /nota/i })).not.toBeInTheDocument();
+
+    // Select a valid period and submit
+    const periodSelectCanc = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectCanc);
+    const optCanc = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optCanc);
+
+    await user.click(screen.getByRole("button", { name: /guardar intento/i }));
+
+    // Must NOT show any grade validation error — form should pass validation for CANCELLED
+    await waitFor(() => {
+      // No grade error message should be present
+      expect(
+        screen.queryByText(/nota válida|nota.*entre|0\.0.*5\.0|ingresá/i)
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("submitting PASSED status with grade '4.0' passes validation and fires POST", async () => {
+    let capturedBody: unknown = null;
+
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE)),
+      http.post("/api/v1/me/course-attempts", async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json(ATTEMPT_CREATED, { status: 201 });
+      })
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+    });
+
+    await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "PASSED");
+
+    const gradeInput = await screen.findByRole("textbox", { name: /nota/i });
+    fireEvent.change(gradeInput, { target: { value: "4.0" } });
+
+    const periodSelectP = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectP);
+    const optP = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optP);
+
+    await user.click(screen.getByRole("button", { name: /guardar intento/i }));
+
+    await waitFor(() => {
+      expect(capturedBody).toMatchObject({
+        status: "PASSED",
+        finalGrade: 4,
+      });
+    });
+  });
+
+  it("submitting FAILED status with empty grade shows a validation error", async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /estado/i })).toBeInTheDocument();
+    });
+
+    // Select FAILED and leave grade empty
+    await user.selectOptions(screen.getByRole("combobox", { name: /estado/i }), "FAILED");
+
+    const gradeInput = screen.getByRole("textbox", { name: /nota/i });
+    await user.clear(gradeInput);
+
+    const periodSelectF = await screen.findByRole("combobox", { name: /período/i });
+    await user.click(periodSelectF);
+    const optF = await screen.findByRole("option", { name: "2025-1" });
+    await user.click(optF);
+
+    await user.click(screen.getByRole("button", { name: /guardar intento/i }));
+
+    // A grade validation error must appear (in the destructive <p> element, not the label)
+    await waitFor(() => {
+      const errorEls = screen.getAllByText(/nota válida|nota.*entre|0\.0.*5\.0|nota.*requerida|ingresá/i);
+      const errorParagraph = errorEls.find((el) => el.tagName === "P");
+      expect(errorParagraph).toBeTruthy();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Change 1 — type="text" grade input behavior (TDD)
+// ---------------------------------------------------------------------------
+
+describe("DeclareProgressForm — grade field type=text behavior (Change 1)", () => {
+  async function openAndGetGradeTextbox() {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_VIEW)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    const user = userEvent.setup();
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    await screen.findByText("Matemáticas Generales");
+    const declareBtn = screen.getAllByRole("button", { name: /declarar/i })[0]!;
+    await user.click(declareBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: /nota/i })).toBeInTheDocument();
+    });
+
+    return screen.getByRole("textbox", { name: /nota/i });
+  }
+
+  it("grade input is type=text (not type=number)", async () => {
+    const gradeInput = await openAndGetGradeTextbox();
+    expect(gradeInput).not.toHaveAttribute("type", "number");
+    expect(gradeInput).toHaveAttribute("type", "text");
+  });
+
+  it("typing 'DASDASD' leaves field empty (filter strips non-numeric)", async () => {
+    const gradeInput = await openAndGetGradeTextbox();
+    fireEvent.change(gradeInput, { target: { value: "DASDASD" } });
+    expect((gradeInput as HTMLInputElement).value).toBe("");
+  });
+
+  it("typing '4.5' keeps field value as '4.5'", async () => {
+    const gradeInput = await openAndGetGradeTextbox();
+    fireEvent.change(gradeInput, { target: { value: "4.5" } });
+    expect((gradeInput as HTMLInputElement).value).toBe("4.5");
+  });
+
+  it("typing '7' leaves field empty (>5 rejected)", async () => {
+    const gradeInput = await openAndGetGradeTextbox();
+    fireEvent.change(gradeInput, { target: { value: "7" } });
+    expect((gradeInput as HTMLInputElement).value).toBe("");
+  });
+
+  it("typing '5.5' leaves field empty (>5 rejected)", async () => {
+    const gradeInput = await openAndGetGradeTextbox();
+    fireEvent.change(gradeInput, { target: { value: "5.5" } });
+    expect((gradeInput as HTMLInputElement).value).toBe("");
   });
 });

@@ -17,7 +17,7 @@
  */
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,7 +31,9 @@ import type { CurriculumCourse } from "@/api/generated/models/curriculum-course"
 import { AttemptStatus } from "@/api/generated/models/attempt-status";
 import { BackLink } from "@/components/layout/back-link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Combobox } from "@/components/ui/combobox";
 import { CourseStatusBadge } from "./course-status-badge";
+import { GradeInput } from "./grade-input";
 import { cn } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api-error";
 
@@ -50,18 +52,34 @@ function generateUUID(): string {
   });
 }
 
-const declareAttemptSchema = z.object({
-  status: z.enum(["PASSED", "FAILED", "CANCELLED"], {
-    error: "Seleccioná un estado.",
-  }),
-  finalGrade: z.coerce
-    .number()
-    .min(0, { message: "La nota mínima es 0.0." })
-    .max(5, { message: "La nota máxima es 5.0." })
-    .optional()
-    .nullable(),
-  periodId: z.string().min(1, { message: "El ID del período es requerido." }),
-});
+const declareAttemptSchema = z
+  .object({
+    status: z.enum(["PASSED", "FAILED", "CANCELLED"], {
+      error: "Seleccioná un estado.",
+    }),
+    // Accept a numeric string or null/undefined from the input.
+    // setValueAs in register converts to number | null before Zod sees it.
+    finalGrade: z
+      .number()
+      .finite({ message: "Ingresá una nota válida entre 0.0 y 5.0." })
+      .min(0, { message: "Ingresá una nota válida entre 0.0 y 5.0." })
+      .max(5, { message: "Ingresá una nota válida entre 0.0 y 5.0." })
+      .optional()
+      .nullable(),
+    periodId: z.string().min(1, { message: "El ID del período es requerido." }),
+  })
+  .superRefine((data, ctx) => {
+    // Grade is required (non-null, valid number) when status is PASSED or FAILED.
+    if (data.status === "PASSED" || data.status === "FAILED") {
+      if (data.finalGrade === null || data.finalGrade === undefined || isNaN(data.finalGrade)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Ingresá una nota válida entre 0.0 y 5.0.",
+          path: ["finalGrade"],
+        });
+      }
+    }
+  });
 
 // Explicit output type: z.coerce.number() infers unknown for input but number for output.
 // Using z.infer<> here causes a zodResolver generic mismatch with @hookform/resolvers v5.
@@ -100,6 +118,7 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<DeclareAttemptFormData>({
@@ -215,19 +234,18 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
             <label htmlFor={`grade-${course.courseId}`} className="text-xs font-medium text-foreground">
               Nota definitiva (0.0–5.0)
             </label>
-            <input
-              id={`grade-${course.courseId}`}
-              type="number"
-              step="0.1"
-              min="0"
-              max="5"
-              aria-label="Nota"
-              className={cn(
-                "border rounded px-2 py-1.5 text-sm bg-background text-foreground w-24",
-                "focus:outline-none focus:ring-1 focus:ring-primary",
-                errors.finalGrade && "border-destructive"
+            <Controller
+              name="finalGrade"
+              control={control}
+              render={({ field }) => (
+                <GradeInput
+                  id={`grade-${course.courseId}`}
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  hasError={!!errors.finalGrade}
+                />
               )}
-              {...register("finalGrade")}
             />
             {errors.finalGrade && (
               <p className="text-xs text-destructive">{errors.finalGrade.message}</p>
@@ -235,38 +253,37 @@ function InlineDeclareForm({ subscriptionId, referenceJourneyCode, course, onClo
           </div>
         )}
 
-        {/* Period select — values come from GET /periods API */}
+        {/* Period combobox — values come from GET /periods API */}
         <div className="flex flex-col gap-1">
           <label htmlFor={`period-${course.courseId}`} className="text-xs font-medium text-foreground">
             Período académico
           </label>
-          <select
-            id={`period-${course.courseId}`}
-            aria-label="Período"
-            disabled={periodsLoading || periodsError || !hasPeriods}
-            className={cn(
-              "border rounded px-2 py-1.5 text-sm bg-background text-foreground",
-              "focus:outline-none focus:ring-1 focus:ring-primary",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              errors.periodId && "border-destructive"
-            )}
-            {...register("periodId")}
-          >
-            {periodsLoading && (
-              <option value="" disabled>Cargando períodos...</option>
-            )}
-            {!periodsLoading && !periodsError && !hasPeriods && (
-              <option value="" disabled>No hay períodos disponibles</option>
-            )}
-            {!periodsLoading && !periodsError && hasPeriods && (
-              <option value="">Seleccioná un período...</option>
-            )}
-            {(periods ?? []).map((period) => (
-              <option key={period.id} value={period.id}>
-                {period.name}
-              </option>
-            ))}
-          </select>
+          <Controller
+            name="periodId"
+            control={control}
+            render={({ field }) => {
+              const periodOptions = (periods ?? []).map((p) => ({ value: p.id, label: p.name }));
+              return (
+                <Combobox
+                  id={`period-${course.courseId}`}
+                  options={periodOptions}
+                  value={field.value ?? ""}
+                  onChange={(v) => field.onChange(v)}
+                  onBlur={field.onBlur}
+                  placeholder={
+                    periodsLoading
+                      ? "Cargando períodos..."
+                      : !hasPeriods
+                        ? "No hay períodos disponibles"
+                        : "Seleccioná un período…"
+                  }
+                  disabled={periodsLoading || !!periodsError || !hasPeriods}
+                  aria-label="Período"
+                  ref={field.ref}
+                />
+              );
+            }}
+          />
           {errors.periodId && (
             <p className="text-xs text-destructive">{errors.periodId.message}</p>
           )}
