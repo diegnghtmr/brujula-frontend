@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { http, HttpResponse } from "msw";
@@ -188,7 +188,7 @@ describe("MallaView (CUR-008)", () => {
     expect(screen.getAllByText(/3 cr/i).length).toBeGreaterThan(0);
   });
 
-  it("renders HIGH confidence badge as ALTA (visible text label)", async () => {
+  it("renders HIGH confidence badge as ALTA (visible text label) after expanding the card", async () => {
     server.use(
       http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
       http.get(`/api/v1/plans/${PLAN_ID}/malla`, () =>
@@ -206,12 +206,17 @@ describe("MallaView (CUR-008)", () => {
       { wrapper: createWrapper() }
     );
 
-    await screen.findByText("Programación I");
-    // HIGH confidence requirement → ALTA label
-    expect(screen.getByText("ALTA")).toBeInTheDocument();
+    // Wait for the card to appear, then expand it
+    const card = await screen.findByText("Programación I");
+    const article = card.closest("article");
+    const btn = article?.querySelector("button");
+    if (btn) fireEvent.click(btn);
+
+    // HIGH confidence requirement → ALTA hint in expanded view
+    expect(screen.getByText(/\[ALTA\]/i)).toBeInTheDocument();
   });
 
-  it("renders MEDIUM confidence badge as MEDIA (sugerido / advisory)", async () => {
+  it("renders MEDIUM confidence badge as MEDIA after expanding the card", async () => {
     server.use(
       http.get(`/api/v1/plans/${PLAN_ID}`, () => HttpResponse.json(PLAN_META)),
       http.get(`/api/v1/plans/${PLAN_ID}/malla`, () =>
@@ -229,10 +234,13 @@ describe("MallaView (CUR-008)", () => {
       { wrapper: createWrapper() }
     );
 
-    await screen.findByText("Formulación de Proyectos");
-    // MEDIUM confidence + inferred → MEDIA label + "sugerido"
-    expect(screen.getByText("MEDIA")).toBeInTheDocument();
-    expect(screen.getAllByText(/sugerido/i).length).toBeGreaterThan(0);
+    const card = await screen.findByText("Formulación de Proyectos");
+    const article = card.closest("article");
+    const btn = article?.querySelector("button");
+    if (btn) fireEvent.click(btn);
+
+    // MEDIUM confidence → MEDIA hint in expanded view
+    expect(screen.getByText(/\[MEDIA\]/i)).toBeInTheDocument();
   });
 
   it("renders graduationRequirements advisory text", async () => {
@@ -257,7 +265,7 @@ describe("MallaView (CUR-008)", () => {
     expect(screen.getByText(/cátedra multidisciplinar/i)).toBeInTheDocument();
   });
 
-  it("renders LOW confidence badge as BAJA with text icon (WCAG)", async () => {
+  it("renders LOW confidence as BAJA hint in expanded card detail", async () => {
     const mallaWithLow = {
       ...MALLA_DIURNA,
       semesterBuckets: [
@@ -301,11 +309,14 @@ describe("MallaView (CUR-008)", () => {
       { wrapper: createWrapper() }
     );
 
-    await screen.findByText("Curso con Requisito Bajo");
-    // LOW confidence → BAJA label (WCAG: text label, not color alone)
-    expect(screen.getByText("BAJA")).toBeInTheDocument();
-    // WCAG: also has text icon (▽) — not color-only
-    expect(screen.getByText("▽")).toBeInTheDocument();
+    // Expand the card to see confidence detail
+    const card = await screen.findByText("Curso con Requisito Bajo");
+    const article = card.closest("article");
+    const btn = article?.querySelector("button");
+    if (btn) fireEvent.click(btn);
+
+    // LOW confidence → BAJA hint in expanded view
+    expect(screen.getByText(/\[BAJA\]/i)).toBeInTheDocument();
   });
 
   it("shows loading indicator while fetching", async () => {

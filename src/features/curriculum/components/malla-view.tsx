@@ -94,7 +94,7 @@ function MallaView() {
                 aria-pressed={selectedJourney === journey.code}
                 aria-label={journey.name}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium border rounded transition-colors",
+                  "px-3 py-1.5 text-sm font-medium border rounded transition-colors min-w-[5.5rem] text-center",
                   selectedJourney === journey.code
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border hover:bg-muted/40"
@@ -116,7 +116,7 @@ function MallaView() {
                 aria-pressed={selectedJourney === code}
                 aria-label={code === "DIURNA" ? "Diurna" : "Nocturna"}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium border rounded transition-colors",
+                  "px-3 py-1.5 text-sm font-medium border rounded transition-colors min-w-[5.5rem] text-center",
                   selectedJourney === code
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border hover:bg-muted/40"
@@ -151,12 +151,20 @@ function MallaView() {
             aria-label="Semestres del plan"
             className="flex gap-4 overflow-x-auto pb-4"
           >
-            {malla.semesterBuckets.map((bucket) => (
-              <SemesterColumn
-                key={bucket.recommendedSemester}
-                bucket={bucket}
-              />
-            ))}
+            {(() => {
+              const courseNames = new Map<string, string>(
+                malla.semesterBuckets
+                  .flatMap((b) => b.courses)
+                  .map((c) => [c.id, c.name])
+              );
+              return malla.semesterBuckets.map((bucket) => (
+                <SemesterColumn
+                  key={bucket.recommendedSemester}
+                  bucket={bucket}
+                  courseNames={courseNames}
+                />
+              ));
+            })()}
           </section>
 
           {/* Graduation requirements advisory */}
