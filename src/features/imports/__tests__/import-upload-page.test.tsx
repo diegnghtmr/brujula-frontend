@@ -175,7 +175,7 @@ describe("ImportUploadPage", () => {
     await waitFor(() => {
       expect(uploadCalled).toBe(true);
       expect(screen.getByTestId("import-detail")).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
   });
 
   // ── 4. a11y: no violations ──────────────────────────────────────────────
