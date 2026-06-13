@@ -24,6 +24,7 @@ import { createApiInstance } from "@/api/client";
 import type { AxiosError } from "@/api/client";
 import { BackLink } from "@/components/layout/back-link";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 const catalogApi = createApiInstance(CatalogApi);
 const importsApi = createApiInstance(ImportsApi);
@@ -109,13 +110,13 @@ function ImportUploadPage() {
       onError: (error: Error) => {
         const axiosError = error as AxiosError;
         const status = axiosError.response?.status;
-        const detail = (axiosError.response?.data as { detail?: string } | undefined)?.detail;
         if (status === 403) {
+          // Hardcoded: STAFF-specific context message preserved intentionally
           setApiError("No tenés permisos de STAFF para realizar esta acción.");
-        } else if (status === 422 || status === 400) {
-          setApiError(detail ?? "Los datos del formulario no son válidos.");
         } else {
-          setApiError("Error al subir el archivo. Verificá que el archivo sea un CSV válido.");
+          setApiError(
+            getApiErrorMessage(error, "Error al subir el archivo. Verificá que el archivo sea un CSV válido.")
+          );
         }
       },
     });
