@@ -69,6 +69,10 @@ function MallaView() {
     enabled: !!planId,
   });
 
+  const courseNames = new Map(
+    (malla?.semesterBuckets ?? []).flatMap((b) => b.courses).map((c) => [c.id, c.name])
+  );
+
   return (
     <div className="p-6 flex flex-col gap-6">
       {/* BackLink — navigate(-1) because malla can be reached from multiple parents */}
@@ -151,20 +155,13 @@ function MallaView() {
             aria-label="Semestres del plan"
             className="flex gap-4 overflow-x-auto pb-4"
           >
-            {(() => {
-              const courseNames = new Map<string, string>(
-                malla.semesterBuckets
-                  .flatMap((b) => b.courses)
-                  .map((c) => [c.id, c.name])
-              );
-              return malla.semesterBuckets.map((bucket) => (
-                <SemesterColumn
-                  key={bucket.recommendedSemester}
-                  bucket={bucket}
-                  courseNames={courseNames}
-                />
-              ));
-            })()}
+            {malla.semesterBuckets.map((bucket) => (
+              <SemesterColumn
+                key={bucket.recommendedSemester}
+                bucket={bucket}
+                courseNames={courseNames}
+              />
+            ))}
           </section>
 
           {/* Graduation requirements advisory */}

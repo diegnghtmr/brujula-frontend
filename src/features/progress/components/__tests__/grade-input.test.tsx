@@ -24,9 +24,20 @@ function Harness({ onValue }: { onValue?: (v: number | null) => void }) {
 }
 
 describe("GradeInput", () => {
+  it("clears display text when parent resets value to null externally", () => {
+    const { rerender } = render(
+      <GradeInput id="grade" value={4.5} onChange={() => {}} />
+    );
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)") as HTMLInputElement;
+    expect(input.value).toBe("4.5");
+
+    rerender(<GradeInput id="grade" value={null} onChange={() => {}} />);
+    expect(input.value).toBe("");
+  });
+
   it("preserves the decimal separator while typing '4.'", () => {
     render(<Harness />);
-    const input = screen.getByLabelText("Nota") as HTMLInputElement;
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)") as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: "4" } });
     expect(input.value).toBe("4");
@@ -42,7 +53,7 @@ describe("GradeInput", () => {
   it("reports the parsed number to onChange", () => {
     const onValue = vi.fn();
     render(<Harness onValue={onValue} />);
-    const input = screen.getByLabelText("Nota");
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)");
 
     fireEvent.change(input, { target: { value: "4.5" } });
     expect(onValue).toHaveBeenLastCalledWith(4.5);
@@ -50,14 +61,14 @@ describe("GradeInput", () => {
 
   it("strips letters — garbage never appears", () => {
     render(<Harness />);
-    const input = screen.getByLabelText("Nota") as HTMLInputElement;
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "DASDASD" } });
     expect(input.value).toBe("");
   });
 
   it("rejects values above 5 (keystroke ignored)", () => {
     render(<Harness />);
-    const input = screen.getByLabelText("Nota") as HTMLInputElement;
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)") as HTMLInputElement;
 
     fireEvent.change(input, { target: { value: "5" } });
     expect(input.value).toBe("5");
@@ -72,7 +83,7 @@ describe("GradeInput", () => {
   it("reports null when cleared", () => {
     const onValue = vi.fn();
     render(<Harness onValue={onValue} />);
-    const input = screen.getByLabelText("Nota");
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)");
     fireEvent.change(input, { target: { value: "4" } });
     fireEvent.change(input, { target: { value: "" } });
     expect(onValue).toHaveBeenLastCalledWith(null);
@@ -80,7 +91,7 @@ describe("GradeInput", () => {
 
   it("caps decimals at 2 places", () => {
     render(<Harness />);
-    const input = screen.getByLabelText("Nota") as HTMLInputElement;
+    const input = screen.getByLabelText("Nota definitiva (0.0–5.0)") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "4.567" } });
     expect(input.value).toBe("4.56");
   });
@@ -95,5 +106,14 @@ describe("sanitizeGradeText", () => {
   });
   it("removes non-numeric characters", () => {
     expect(sanitizeGradeText("a4b.c5")).toBe("4.5");
+  });
+  it("strips leading zero when followed by another digit ('05' → '5')", () => {
+    expect(sanitizeGradeText("05")).toBe("5");
+  });
+  it("preserves standalone '0'", () => {
+    expect(sanitizeGradeText("0")).toBe("0");
+  });
+  it("preserves '0.x' (zero before decimal is valid)", () => {
+    expect(sanitizeGradeText("0.5")).toBe("0.5");
   });
 });

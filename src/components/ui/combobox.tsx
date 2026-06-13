@@ -119,7 +119,8 @@ function Combobox({
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!isOpen) {
-      if (e.key === "ArrowDown" || e.key === "Enter") {
+      // When closed: ArrowDown opens the dropdown. Enter propagates freely so form can submit.
+      if (e.key === "ArrowDown") {
         openDropdown();
         e.preventDefault();
       }
@@ -151,10 +152,13 @@ function Combobox({
       }
       case "Enter": {
         e.preventDefault();
-        if (filteredOptions.length > 0) {
-          const idx = activeIndex >= 0 ? activeIndex : 0;
-          const opt = filteredOptions[idx];
+        if (activeIndex >= 0) {
+          // User navigated to an option — select it.
+          const opt = filteredOptions[activeIndex];
           if (opt) selectOption(opt);
+        } else {
+          // No active option — close without selecting (prevents accidental submit while popup is open).
+          closeDropdown();
         }
         break;
       }
@@ -213,7 +217,7 @@ function Combobox({
           )}
         >
           {filteredOptions.length === 0 ? (
-            <li className="px-2 py-1.5 text-sm text-muted-foreground select-none">
+            <li role="option" aria-disabled="true" aria-selected={false} className="px-2 py-1.5 text-sm text-muted-foreground select-none">
               Sin resultados
             </li>
           ) : (

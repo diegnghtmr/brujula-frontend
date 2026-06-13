@@ -4,7 +4,7 @@
  * Spec: CROSS-5-RENDER
  * Each CourseProgressStatus value must render:
  *   - a visible text label (not color alone)
- *   - an icon element (aria-hidden)
+ *   - color + text only (no icon element)
  *
  * Statuses: PENDING, PASSED, FAILED, CANCELLED, AVAILABLE, BLOCKED
  *

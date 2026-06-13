@@ -135,7 +135,7 @@ function BlockedReasons({ reasons }: { reasons: string[] }) {
   );
 }
 
-// ─── EligibilityBadge — WCAG 2.2 AA: icon + color + text (never color alone) ──
+// ─── EligibilityBadge — WCAG 2.2 AA: color + text (never color alone) ──
 
 const ELIGIBILITY_BADGE_CONFIG = {
   passed: {

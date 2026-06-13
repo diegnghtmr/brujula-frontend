@@ -79,7 +79,7 @@ describe("Combobox", () => {
     });
   });
 
-  it("ArrowDown + Enter selects via keyboard", async () => {
+  it("ArrowDown + Enter selects the first option via keyboard", async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     render(<Combobox options={OPTIONS} value="" onChange={onChange} />);
@@ -89,7 +89,49 @@ describe("Combobox", () => {
     await user.keyboard("{ArrowDown}");
     await user.keyboard("{Enter}");
 
-    expect(onChange).toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith("v1");
+  });
+
+  it("Enter while dropdown is CLOSED does not call onChange and does not preventDefault", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <form onSubmit={(e) => e.preventDefault()}>
+        <Combobox options={OPTIONS} value="" onChange={onChange} />
+      </form>
+    );
+
+    const input = screen.getByRole("combobox");
+    // Focus without opening (tab focus instead of click to avoid triggering open)
+    input.focus();
+
+    // Dropdown must be closed
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    // Press Enter — must not call onChange
+    await user.keyboard("{Enter}");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("Enter while open with no active option closes dropdown without selecting", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<Combobox options={OPTIONS} value="" onChange={onChange} />);
+
+    const input = screen.getByRole("combobox");
+    await user.click(input);
+    await screen.findByRole("listbox");
+
+    // Press Enter without ArrowDown — activeIndex is -1
+    await user.keyboard("{Enter}");
+
+    // onChange must NOT have been called
+    expect(onChange).not.toHaveBeenCalled();
+
+    // Dropdown must be closed
+    await waitFor(() => {
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    });
   });
 
   it("Escape closes dropdown without changing selection", async () => {
@@ -109,7 +151,7 @@ describe("Combobox", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("empty filter shows 'Sin resultados'", async () => {
+  it("empty filter shows 'Sin resultados' as aria-disabled option", async () => {
     const user = userEvent.setup();
     render(<Combobox options={OPTIONS} value="" onChange={() => {}} />);
 
@@ -120,7 +162,10 @@ describe("Combobox", () => {
     await waitFor(() => {
       expect(screen.getByText("Sin resultados")).toBeInTheDocument();
     });
-    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+    // The no-results message must be a non-selectable option (role=option, aria-disabled)
+    const noResults = screen.getByRole("option", { name: "Sin resultados" });
+    expect(noResults).toHaveAttribute("aria-disabled", "true");
+    expect(noResults).toHaveAttribute("aria-selected", "false");
   });
 
   it("disabled state: input is disabled, dropdown does not open", async () => {

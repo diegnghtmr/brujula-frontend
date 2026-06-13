@@ -15,7 +15,7 @@
  * React Compiler is ON: no useMemo/useCallback.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface GradeInputProps {
@@ -31,14 +31,19 @@ interface GradeInputProps {
 const MAX_GRADE = 5;
 const MAX_DECIMALS = 2;
 
-/** Keep digits + a single decimal point, capped at MAX_DECIMALS decimals. */
+/** Keep digits + a single decimal point, capped at MAX_DECIMALS decimals.
+ * Also strips leading zeros in the integer part when followed by another digit
+ * (e.g. "05" → "5"), but preserves "0" and "0.x". */
 function sanitizeGradeText(raw: string): string {
   const onlyValid = raw.replace(/[^0-9.]/g, "");
   const firstDot = onlyValid.indexOf(".");
-  if (firstDot === -1) return onlyValid;
-  const intPart = onlyValid.slice(0, firstDot);
+  if (firstDot === -1) {
+    // No decimal: strip leading zero before another digit (e.g. "05" → "5")
+    return onlyValid.replace(/^0(\d)/, "$1");
+  }
+  const intPartRaw = onlyValid.slice(0, firstDot).replace(/^0(\d)/, "$1");
   const decPart = onlyValid.slice(firstDot + 1).replace(/\./g, "").slice(0, MAX_DECIMALS);
-  return `${intPart}.${decPart}`;
+  return `${intPartRaw}.${decPart}`;
 }
 
 function initialText(value: number | null): string {
@@ -49,6 +54,12 @@ function GradeInput({ id, value, onChange, onBlur, hasError }: GradeInputProps) 
   // The input's display text is the source of truth while focused/typing,
   // so an in-progress "4." survives across renders.
   const [text, setText] = useState<string>(() => initialText(value));
+
+  // Sync display when the form value is reset/cleared externally.
+  // The component is the source of truth WHILE typing, so only re-sync on an external null (clear/reset).
+  useEffect(() => {
+    if (value === null || value === undefined) setText("");
+  }, [value]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const next = sanitizeGradeText(e.target.value);
@@ -74,7 +85,7 @@ function GradeInput({ id, value, onChange, onBlur, hasError }: GradeInputProps) 
       id={id}
       type="text"
       inputMode="decimal"
-      aria-label="Nota"
+      aria-label="Nota definitiva (0.0–5.0)"
       value={text}
       onChange={handleChange}
       onBlur={onBlur}
