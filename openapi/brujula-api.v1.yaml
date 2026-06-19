@@ -2529,8 +2529,8 @@ components:
       format: double
       minimum: 0.0
       maximum: 5.0
-      multipleOf: 0.1
-      description: Nota definitiva 0.0–5.0 con una cifra decimal.
+      multipleOf: 0.01
+      description: Nota definitiva 0.0–5.0 con dos cifras decimales.
     Weekday:
       type: string
       enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
