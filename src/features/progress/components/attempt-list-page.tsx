@@ -446,7 +446,7 @@ function AttemptRow({ attempt, subscriptionId }: AttemptRowProps) {
             {attempt.finalGrade != null && (
               // Tabular-nums for grade values
               <span className="text-xs text-foreground font-medium tabular-nums">
-                {attempt.finalGrade.toFixed(1)}
+                {attempt.finalGrade.toFixed(2)}
               </span>
             )}
           </div>
