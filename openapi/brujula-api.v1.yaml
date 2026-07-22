@@ -2572,7 +2572,12 @@ components:
     RequirementType:
       type: string
       enum: [COURSE_PASSED, SEQUENCE, MINIMUM_CREDITS, CONFIGURABLE]
-      description: Tipos de requisito.
+      description: |
+        Tipos de requisito. CONFIGURABLE modela un requisito de grupo/pool (p. ej. el
+        umbral de electivas de profundización distintas y aprobadas antes de habilitar
+        Trabajo de Grado): `requiredCourseId` es nulo (no hay una única materia requerida)
+        y `requiredCredits` se reinterpreta como el número de aprobaciones distintas
+        requeridas dentro del pool, en vez de créditos.
     SequentialTrackKind:
       type: string
       enum: [PERSONAL_ELECTIVE, DEEPENING]
@@ -2832,6 +2837,13 @@ components:
           type: array
           description: Requisitos faltantes cuando el estado es BLOCKED.
           items: { type: string }
+        filledElectiveName:
+          type: [string, "null"]
+          description: |
+            Para una materia que es un slot de visualización numerado de un requisito de
+            pool CONFIGURABLE (p. ej. "Profundización I"), el nombre de la electiva
+            concreta del pool que el estudiante aprobó para ese slot. Nulo si el slot aún
+            no tiene electiva aprobada asignada, o si la materia no es un slot de pool.
 
     CourseAttempt:
       type: object
@@ -3303,7 +3315,10 @@ components:
         requiredCredits:
           type: [integer, "null"]
           minimum: 0
-          description: Créditos mínimos para MINIMUM_CREDITS.
+          description: |
+            Créditos mínimos para MINIMUM_CREDITS. Para CONFIGURABLE se reinterpreta como
+            el número de aprobaciones distintas requeridas dentro del pool (ver
+            RequirementType).
         simultaneityAllowed:
           type: [boolean, "null"]
           description: Permite simultaneidad en secuencias.
@@ -3485,6 +3500,13 @@ components:
         simultaneityAllowed:
           type: [boolean, "null"]
           description: Si se permite inscripción simultánea con el prerrequisito.
+        requiredCredits:
+          type: [integer, "null"]
+          minimum: 0
+          description: |
+            Para CONFIGURABLE, el umbral de aprobaciones distintas requeridas dentro del
+            pool (p. ej. 4 electivas de profundización distintas y aprobadas). Nulo para
+            los demás tipos de requisito.
     MallaCourse:
       type: object
       required: [id, name, type, credits, requirements]

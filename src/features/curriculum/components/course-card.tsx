@@ -40,7 +40,11 @@ function resolveRequirementLabel(
     case "MINIMUM_CREDITS":
       return "Requiere créditos mínimos aprobados";
     case "CONFIGURABLE":
-      return "Requisito configurable";
+      // PROP-001: requiredCredits is the configurable pool threshold — the number of
+      // distinct approvals required within the pool (e.g. 4 profundización electives).
+      return req.requiredCredits != null
+        ? `Requisito configurable: ${req.requiredCredits} aprobaciones del grupo`
+        : "Requisito configurable";
     default:
       return "Requisito desconocido";
   }

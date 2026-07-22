@@ -207,6 +207,26 @@ describe("CourseCard — expanded state (#25)", () => {
     expect(screen.getByText(/requisito configurable/i)).toBeInTheDocument();
   });
 
+  it("shows the pool threshold on a CONFIGURABLE requirement when requiredCredits is present (PROP-001)", async () => {
+    const course = makeCourse({
+      requirements: [
+        {
+          type: "CONFIGURABLE",
+          requiredCredits: 4,
+        },
+      ],
+    });
+
+    const user = userEvent.setup();
+    render(<CourseCard course={course} courseNames={new Map()} />);
+
+    await user.click(screen.getByRole("button"));
+
+    expect(
+      screen.getByText(/requisito configurable: 4 aprobaciones del grupo/i)
+    ).toBeInTheDocument();
+  });
+
   it("appends simultaneity note when simultaneityAllowed is true", async () => {
     const course = makeCourse({
       requirements: [
