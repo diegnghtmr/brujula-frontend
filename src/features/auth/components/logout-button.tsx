@@ -1,12 +1,17 @@
 /**
- * LogoutButton — calls POST /auth/logout via generated AuthApi,
- * clears the TanStack Query cache, clears the disclaimer session key, then navigates to /login.
+ * LogoutButton — calls POST /auth/logout via generated AuthApi, clears the TanStack Query cache,
+ * clears the disclaimer session key, then redirects the browser.
+ *
+ * RP-initiated (single) logout: the backend is the OIDC Relying Party, so a local-only logout lets
+ * Keycloak silently re-authenticate the user via SSO. On success the backend returns the Keycloak
+ * end_session URL in the `X-Logout-Redirect` response header (status stays 204). When present we
+ * navigate there so Keycloak ends the SSO session and then redirects back to /login. When absent
+ * (or on failure) we fall back to a local /login navigation.
  *
  * Logout requires CSRF token in X-XSRF-TOKEN header (handled by axios interceptor).
  * The generated AuthApi.logout() method accepts xXSRFTOKEN as a parameter,
  * but our axios interceptor ALREADY injects it from the cookie — we pass a
  * placeholder to satisfy the generated signature; the interceptor overrides it.
- * After logout: clear query cache + clear disclaimer session key + navigate to /login.
  *
  * Disclaimer banner MUST reappear on next login.
  * sessionStorage survives same-tab logout+re-login, so we MUST explicitly clear
@@ -23,9 +28,10 @@ import { DISCLAIMER_SESSION_KEY } from "@/features/auth/components/disclaimer-ba
 
 const authApi = createApiInstance(AuthApi);
 
-function initiateLoginRedirect() {
-  window.location.assign("/login");
-}
+/** Response header carrying the Keycloak end_session URL (see backend SecurityConfiguration). */
+const LOGOUT_REDIRECT_HEADER = "x-logout-redirect";
+
+const LOGIN_PATH = "/login";
 
 function LogoutButton() {
   const queryClient = useQueryClient();
@@ -33,11 +39,21 @@ function LogoutButton() {
 
   async function handleLogout() {
     setIsPending(true);
+    // Default to a local /login navigation; upgraded to the Keycloak end_session URL when the
+    // backend supplies the X-Logout-Redirect header on a successful logout.
+    let redirectTarget = LOGIN_PATH;
     try {
       // The interceptor injects X-XSRF-TOKEN from the cookie automatically.
       // The generated client requires the header as a param — pass empty string;
       // the actual value comes from the axios CSRF interceptor.
-      await authApi.logout({ xXSRFTOKEN: "" });
+      const response = await authApi.logout({ xXSRFTOKEN: "" });
+      const headerRedirect = response.headers[LOGOUT_REDIRECT_HEADER];
+      if (typeof headerRedirect === "string" && headerRedirect.length > 0) {
+        redirectTarget = headerRedirect;
+      }
+    } catch {
+      // Logout request failed (network / 5xx). Proceed to the local /login anyway — the user must
+      // not be stranded on an authenticated screen. redirectTarget stays "/login".
     } finally {
       // Clear all cached queries (auth state gone).
       queryClient.clear();
@@ -45,7 +61,7 @@ function LogoutButton() {
       // in the same tab (banner MUST reappear on next login).
       sessionStorage.removeItem(DISCLAIMER_SESSION_KEY);
       setIsPending(false);
-      initiateLoginRedirect();
+      window.location.assign(redirectTarget);
     }
   }
 

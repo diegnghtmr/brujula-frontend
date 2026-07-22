@@ -1,9 +1,14 @@
 /**
- * LogoutButton — disclaimer session key cleared on logout.
+ * LogoutButton — RP-initiated (single) logout + disclaimer session key cleared on logout.
  *
  * The banner is dismissible per session but MUST reappear on next login.
  * sessionStorage survives same-tab navigation. Logout MUST clear the disclaimer-dismissed
  * key so the banner is visible again after re-login in the same tab.
+ *
+ * RP-initiated logout: when the backend returns the Keycloak end_session URL in the
+ * `X-Logout-Redirect` response header, the button MUST navigate the browser there (so Keycloak
+ * ends the SSO session) instead of doing a local /login navigation. When the header is absent it
+ * falls back to /login.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -15,6 +20,11 @@ import { server } from "@/test/msw/server";
 import { createElement, type ReactNode } from "react";
 import { DISCLAIMER_SESSION_KEY } from "@/features/auth/components/disclaimer-banner";
 import { LogoutButton } from "@/features/auth/components/logout-button";
+
+const END_SESSION_URL =
+  "http://localhost:8090/realms/brujula-dev/protocol/openid-connect/logout" +
+  "?id_token_hint=abc.def.ghi&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Flogin" +
+  "&client_id=brujula-backend";
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -28,16 +38,16 @@ function createWrapper() {
     );
 }
 
-describe("LogoutButton — disclaimer session key cleared on logout", () => {
+describe("LogoutButton — RP-initiated logout + disclaimer session key cleared on logout", () => {
   beforeEach(() => {
     sessionStorage.clear();
-    // Intercept logout POST so test doesn't fail on network
+    // Default: intercept logout POST with a bare 204 (no X-Logout-Redirect header).
     server.use(
       http.post("/api/v1/auth/logout", () => {
         return new HttpResponse(null, { status: 204 });
       })
     );
-    // Stub window.location.assign to prevent jsdom navigation errors
+    // Stub window.location.assign to prevent jsdom navigation errors and allow assertions.
     Object.defineProperty(window, "location", {
       value: { ...window.location, assign: vi.fn() },
       writable: true,
@@ -73,6 +83,52 @@ describe("LogoutButton — disclaimer session key cleared on logout", () => {
     // Should complete without error; key remains absent
     await waitFor(() => {
       expect(sessionStorage.getItem(DISCLAIMER_SESSION_KEY)).toBeNull();
+    });
+  });
+
+  it("redirects to the Keycloak end_session URL when X-Logout-Redirect header is present", async () => {
+    server.use(
+      http.post("/api/v1/auth/logout", () => {
+        return new HttpResponse(null, {
+          status: 204,
+          headers: { "X-Logout-Redirect": END_SESSION_URL },
+        });
+      })
+    );
+
+    render(<LogoutButton />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar sesión/i }));
+
+    await waitFor(() => {
+      expect(window.location.assign).toHaveBeenCalledWith(END_SESSION_URL);
+    });
+  });
+
+  it("falls back to /login when no X-Logout-Redirect header is present", async () => {
+    // beforeEach registers a bare 204 handler with no header.
+    render(<LogoutButton />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar sesión/i }));
+
+    await waitFor(() => {
+      expect(window.location.assign).toHaveBeenCalledWith("/login");
+    });
+  });
+
+  it("falls back to /login when the logout request fails", async () => {
+    server.use(
+      http.post("/api/v1/auth/logout", () => {
+        return new HttpResponse(null, { status: 500 });
+      })
+    );
+
+    render(<LogoutButton />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar sesión/i }));
+
+    await waitFor(() => {
+      expect(window.location.assign).toHaveBeenCalledWith("/login");
     });
   });
 });
