@@ -335,6 +335,18 @@ function CourseRow({ subscriptionId, referenceJourneyCode, course }: CourseRowPr
           <span className="text-sm font-medium text-foreground truncate">
             {course.name}
           </span>
+          {/* PROP-001: concrete elective mapped onto a numbered Profundización slot.
+              Null for non-pool courses or an unfilled slot → nothing rendered.
+              Shown as a secondary line under the slot name (e.g. "Profundización I"
+              → "Diseño Centrado en el Usuario"). */}
+          {course.filledElectiveName && (
+            <span
+              className="text-xs text-muted-foreground truncate"
+              title={course.filledElectiveName}
+            >
+              {course.filledElectiveName}
+            </span>
+          )}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground">{course.credits} cr</span>
             {course.officialCode && (

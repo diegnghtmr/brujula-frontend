@@ -995,3 +995,100 @@ describe("DeclareProgressForm — grade field type=text behavior (Change 1)", ()
     expect((gradeInput as HTMLInputElement).value).toBe("");
   });
 });
+
+// ---------------------------------------------------------------------------
+// PROP-001 — concrete profundización elective mapped onto a numbered slot
+// ---------------------------------------------------------------------------
+
+describe("DeclareProgressForm — PROP-001 filled elective", () => {
+  /** Curriculum with one FILLED and one UNFILLED numbered Profundización slot. */
+  const CURRICULUM_PROFUNDIZACION = {
+    subscriptionId: SUBSCRIPTION_ID,
+    referenceJourney: { code: "DIURNA", name: "Diurna" },
+    semesters: [
+      {
+        recommendedSemester: 7,
+        courses: [
+          {
+            courseId: "prof-1",
+            officialCode: null,
+            name: "Profundización I",
+            credits: 3,
+            type: "DEEPENING",
+            progressStatus: "PASSED",
+            unmetRequirements: [],
+            // Concrete elective approved for this slot.
+            filledElectiveName: "Diseño Centrado en el Usuario",
+          },
+          {
+            courseId: "prof-2",
+            officialCode: null,
+            name: "Profundización II",
+            credits: 3,
+            type: "DEEPENING",
+            progressStatus: "PASSED",
+            unmetRequirements: [],
+            // Slot not yet filled → no elective subtitle should render.
+            filledElectiveName: null,
+          },
+        ],
+      },
+    ],
+  };
+
+  it("renders the concrete elective as a secondary line under a filled slot", async () => {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_PROFUNDIZACION)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // Slot name (primary line) is present…
+    expect(await screen.findByText("Profundización I")).toBeInTheDocument();
+    // …and the concrete elective renders as the secondary line (with a title for truncation).
+    expect(
+      screen.getByText("Diseño Centrado en el Usuario")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle("Diseño Centrado en el Usuario")
+    ).toBeInTheDocument();
+  });
+
+  it("renders no elective subtitle for an unfilled slot (filledElectiveName null)", async () => {
+    server.use(
+      http.get(
+        `/api/v1/me/subscriptions/${SUBSCRIPTION_ID}/curriculum`,
+        () => HttpResponse.json(CURRICULUM_PROFUNDIZACION)
+      ),
+      http.get("/api/v1/periods", () => HttpResponse.json(PERIODS_FIXTURE))
+    );
+
+    render(
+      <Routes>
+        <Route
+          path="/progress/subscriptions/:subscriptionId/declare"
+          element={<DeclareProgressForm />}
+        />
+      </Routes>,
+      { wrapper: createWrapper() }
+    );
+
+    // The unfilled slot renders its name…
+    expect(await screen.findByText("Profundización II")).toBeInTheDocument();
+    // …and the elective subtitle is the only titled node in these (PASSED, no-unmet)
+    // rows, so exactly one exists — the filled slot's — proving the null slot rendered none.
+    expect(screen.getAllByTitle(/.+/)).toHaveLength(1);
+  });
+});
