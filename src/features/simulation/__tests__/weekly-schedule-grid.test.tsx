@@ -33,8 +33,8 @@ const CLASH_ENTRY: WeeklyScheduleEntry = {
 describe("WeeklyScheduleGrid", () => {
   it("renders non-clash sessions without clash indicator", () => {
     render(<WeeklyScheduleGrid entries={[NON_CLASH_ENTRY]} />);
-    // Course name appears (in the calendar cell and the color legend)
-    expect(screen.getAllByText("Matemáticas Generales").length).toBeGreaterThan(0);
+    // Course name appears
+    expect(screen.getByText("Matemáticas Generales")).toBeInTheDocument();
     // No clash text/icon present
     expect(screen.queryByText(/choque|clash/i)).not.toBeInTheDocument();
   });
@@ -103,8 +103,8 @@ describe("WeeklyScheduleGrid", () => {
       inClash: false,
     };
     render(<WeeklyScheduleGrid entries={[entry]} />);
-    // Course name visible (calendar cell + legend)
-    expect(screen.getAllByText("Álgebra Lineal").length).toBeGreaterThan(0);
+    // Course name visible
+    expect(screen.getByText("Álgebra Lineal")).toBeInTheDocument();
     // Time visible
     expect(screen.getByText("10:00–12:00")).toBeInTheDocument();
     // Cell is in the "Mar" column (Tuesday) — verify the aria-label
@@ -197,7 +197,7 @@ describe("WeeklyScheduleGrid", () => {
 
   // ─── Per-course coloring + legend (UX) ───────────────────────────────────────
 
-  it("assigns a distinct color per course and renders a color legend", () => {
+  it("assigns a distinct color per course on the session blocks", () => {
     const calculo: WeeklyScheduleEntry = {
       day: "MONDAY", startsAt: "08:00", endsAt: "10:00",
       courseName: "Cálculo I", programId: "prog-1", selectionId: "c1", inClash: false,
@@ -207,9 +207,6 @@ describe("WeeklyScheduleGrid", () => {
       courseName: "Física General", programId: "prog-1", selectionId: "c2", inClash: false,
     };
     render(<WeeklyScheduleGrid entries={[calculo, fisica]} />);
-
-    // A color legend is rendered
-    expect(screen.getByRole("list", { name: /colores por materia/i })).toBeInTheDocument();
 
     // The two session cells carry different background colors
     const cellA = screen.getByRole("cell", { name: /Cálculo I/i });

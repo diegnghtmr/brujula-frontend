@@ -138,8 +138,7 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
     COURSE_PALETTE[(courseColorIndex.get(courseName) ?? 0) % COURSE_PALETTE.length]!;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="max-h-[32rem] overflow-auto">
+    <div className="max-h-[32rem] overflow-auto">
       <table
         className="border-collapse text-xs"
         role="table"
@@ -251,35 +250,6 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
           ))}
         </tbody>
       </table>
-      </div>
-
-      {/* Legend: color → materia, as tinted chips that mirror the calendar blocks */}
-      {courseColorIndex.size > 0 && (
-        <ul
-          className="flex flex-wrap gap-2"
-          aria-label="Referencia de colores por materia"
-        >
-          {[...courseColorIndex.keys()].map((name) => {
-            const palette = paletteFor(name);
-            return (
-              <li key={name}>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium",
-                    palette.cell
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={cn("h-2 w-2 shrink-0 rounded-full", palette.dot)}
-                  />
-                  {name}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }
