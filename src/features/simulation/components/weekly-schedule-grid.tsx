@@ -253,29 +253,31 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
       </table>
       </div>
 
-      {/* Legend: color → materia (decodes the per-course block colors) */}
+      {/* Legend: color → materia, as tinted chips that mirror the calendar blocks */}
       {courseColorIndex.size > 0 && (
         <ul
-          className="flex flex-wrap gap-x-4 gap-y-1.5 px-0.5"
+          className="flex flex-wrap gap-2"
           aria-label="Referencia de colores por materia"
         >
-          {[...courseColorIndex.keys()].map((name) => (
-            <li
-              key={name}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "inline-block h-2.5 w-2.5 shrink-0 rounded-sm",
-                  paletteFor(name).dot
-                )}
-              />
-              <span className="truncate max-w-[220px]" title={name}>
-                {name}
-              </span>
-            </li>
-          ))}
+          {[...courseColorIndex.keys()].map((name) => {
+            const palette = paletteFor(name);
+            return (
+              <li key={name}>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium",
+                    palette.cell
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn("h-2 w-2 shrink-0 rounded-full", palette.dot)}
+                  />
+                  {name}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
