@@ -24,6 +24,24 @@ const DAYS = [
   { key: "SUNDAY", label: "Dom" },
 ] as const;
 
+// Categorical, theme-aware palette for per-course coloring (UX: each materia
+// gets a stable, distinct color so a course's multiple sessions are easy to
+// track at a glance). Red/rose are intentionally omitted — reserved for the
+// schedule-clash state. `cell` styles the timetable block (readable text in
+// both light and dark themes); `dot` is the solid legend swatch.
+const COURSE_PALETTE = [
+  { cell: "bg-blue-500/15 text-blue-900 dark:text-blue-100 border-blue-500/40", dot: "bg-blue-500" },
+  { cell: "bg-emerald-500/15 text-emerald-900 dark:text-emerald-100 border-emerald-500/40", dot: "bg-emerald-500" },
+  { cell: "bg-amber-500/15 text-amber-900 dark:text-amber-100 border-amber-500/40", dot: "bg-amber-500" },
+  { cell: "bg-violet-500/15 text-violet-900 dark:text-violet-100 border-violet-500/40", dot: "bg-violet-500" },
+  { cell: "bg-cyan-500/15 text-cyan-900 dark:text-cyan-100 border-cyan-500/40", dot: "bg-cyan-500" },
+  { cell: "bg-fuchsia-500/15 text-fuchsia-900 dark:text-fuchsia-100 border-fuchsia-500/40", dot: "bg-fuchsia-500" },
+  { cell: "bg-orange-500/15 text-orange-900 dark:text-orange-100 border-orange-500/40", dot: "bg-orange-500" },
+  { cell: "bg-teal-500/15 text-teal-900 dark:text-teal-100 border-teal-500/40", dot: "bg-teal-500" },
+  { cell: "bg-indigo-500/15 text-indigo-900 dark:text-indigo-100 border-indigo-500/40", dot: "bg-indigo-500" },
+  { cell: "bg-lime-500/15 text-lime-900 dark:text-lime-100 border-lime-500/40", dot: "bg-lime-500" },
+] as const;
+
 type DayKey = (typeof DAYS)[number]["key"];
 
 const DEFAULT_START_HOUR = 6;
@@ -102,8 +120,26 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
     }
   }
 
+  // Assign a stable color to each course by first appearance (day, then start
+  // time) — deterministic within this view and distinct up to the palette size.
+  // Keyed by courseName since WeeklyScheduleEntry carries no courseId.
+  const courseColorIndex = new Map<string, number>();
+  for (const day of DAYS) {
+    const dayEntries = [...(byDay.get(day.key) ?? [])].sort(
+      (a, b) => parseHour(a.startsAt) - parseHour(b.startsAt)
+    );
+    for (const entry of dayEntries) {
+      if (!courseColorIndex.has(entry.courseName)) {
+        courseColorIndex.set(entry.courseName, courseColorIndex.size);
+      }
+    }
+  }
+  const paletteFor = (courseName: string) =>
+    COURSE_PALETTE[(courseColorIndex.get(courseName) ?? 0) % COURSE_PALETTE.length]!;
+
   return (
-    <div className="max-h-[32rem] overflow-auto">
+    <div className="flex flex-col gap-3">
+      <div className="max-h-[32rem] overflow-auto">
       <table
         className="border-collapse text-xs"
         role="table"
@@ -166,16 +202,18 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
                   const startH = parseHour(entry.startsAt);
                   const endH = parseHour(entry.endsAt);
                   const rowSpan = Math.max(1, endH - startH);
+                  const palette = paletteFor(entry.courseName);
 
                   return (
                     <td
                       key={day.key}
                       rowSpan={rowSpan}
                       className={cn(
-                        "border border-border p-1 align-top",
-                        entry.inClash
-                          ? "bg-destructive-subtle text-destructive-subtle-foreground"
-                          : "bg-info-subtle text-info-subtle-foreground"
+                        "border p-1 align-top",
+                        palette.cell,
+                        // Clash keeps the course color but adds a strong red ring;
+                        // the ⚠ icon + text below make it non-color-only (WCAG 2.2).
+                        entry.inClash && "ring-2 ring-inset ring-destructive"
                       )}
                       aria-label={buildAriaLabel(entry, day.label)}
                     >
@@ -213,6 +251,33 @@ function WeeklyScheduleGrid({ entries }: WeeklyScheduleGridProps) {
           ))}
         </tbody>
       </table>
+      </div>
+
+      {/* Legend: color → materia (decodes the per-course block colors) */}
+      {courseColorIndex.size > 0 && (
+        <ul
+          className="flex flex-wrap gap-x-4 gap-y-1.5 px-0.5"
+          aria-label="Referencia de colores por materia"
+        >
+          {[...courseColorIndex.keys()].map((name) => (
+            <li
+              key={name}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "inline-block h-2.5 w-2.5 shrink-0 rounded-sm",
+                  paletteFor(name).dot
+                )}
+              />
+              <span className="truncate max-w-[220px]" title={name}>
+                {name}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -33,8 +33,8 @@ const CLASH_ENTRY: WeeklyScheduleEntry = {
 describe("WeeklyScheduleGrid", () => {
   it("renders non-clash sessions without clash indicator", () => {
     render(<WeeklyScheduleGrid entries={[NON_CLASH_ENTRY]} />);
-    // Course name appears
-    expect(screen.getByText("Matemáticas Generales")).toBeInTheDocument();
+    // Course name appears (in the calendar cell and the color legend)
+    expect(screen.getAllByText("Matemáticas Generales").length).toBeGreaterThan(0);
     // No clash text/icon present
     expect(screen.queryByText(/choque|clash/i)).not.toBeInTheDocument();
   });
@@ -103,8 +103,8 @@ describe("WeeklyScheduleGrid", () => {
       inClash: false,
     };
     render(<WeeklyScheduleGrid entries={[entry]} />);
-    // Course name visible
-    expect(screen.getByText("Álgebra Lineal")).toBeInTheDocument();
+    // Course name visible (calendar cell + legend)
+    expect(screen.getAllByText("Álgebra Lineal").length).toBeGreaterThan(0);
     // Time visible
     expect(screen.getByText("10:00–12:00")).toBeInTheDocument();
     // Cell is in the "Mar" column (Tuesday) — verify the aria-label
@@ -193,5 +193,55 @@ describe("WeeklyScheduleGrid", () => {
     // Without padding, 09:00 would be absent (pre-change tight behavior check)
     // 08:00 must NOT exist (one row above the padded start)
     expect(screen.queryByRole("rowheader", { name: "08:00" })).not.toBeInTheDocument();
+  });
+
+  // ─── Per-course coloring + legend (UX) ───────────────────────────────────────
+
+  it("assigns a distinct color per course and renders a color legend", () => {
+    const calculo: WeeklyScheduleEntry = {
+      day: "MONDAY", startsAt: "08:00", endsAt: "10:00",
+      courseName: "Cálculo I", programId: "prog-1", selectionId: "c1", inClash: false,
+    };
+    const fisica: WeeklyScheduleEntry = {
+      day: "TUESDAY", startsAt: "08:00", endsAt: "10:00",
+      courseName: "Física General", programId: "prog-1", selectionId: "c2", inClash: false,
+    };
+    render(<WeeklyScheduleGrid entries={[calculo, fisica]} />);
+
+    // A color legend is rendered
+    expect(screen.getByRole("list", { name: /colores por materia/i })).toBeInTheDocument();
+
+    // The two session cells carry different background colors
+    const cellA = screen.getByRole("cell", { name: /Cálculo I/i });
+    const cellB = screen.getByRole("cell", { name: /Física General/i });
+    const bgA = [...cellA.classList].find((c) => c.startsWith("bg-"));
+    const bgB = [...cellB.classList].find((c) => c.startsWith("bg-"));
+    expect(bgA).toBeTruthy();
+    expect(bgB).toBeTruthy();
+    expect(bgA).not.toBe(bgB);
+  });
+
+  it("all sessions of the same course share one color", () => {
+    const s1: WeeklyScheduleEntry = {
+      day: "MONDAY", startsAt: "08:00", endsAt: "10:00",
+      courseName: "Álgebra", programId: "prog-1", selectionId: "a1", inClash: false,
+    };
+    const s2: WeeklyScheduleEntry = {
+      day: "WEDNESDAY", startsAt: "08:00", endsAt: "10:00",
+      courseName: "Álgebra", programId: "prog-1", selectionId: "a2", inClash: false,
+    };
+    render(<WeeklyScheduleGrid entries={[s1, s2]} />);
+    const cells = screen.getAllByRole("cell", { name: /Álgebra/i });
+    expect(cells.length).toBe(2);
+    const bg0 = [...cells[0]!.classList].find((c) => c.startsWith("bg-"));
+    const bg1 = [...cells[1]!.classList].find((c) => c.startsWith("bg-"));
+    expect(bg0).toBe(bg1);
+  });
+
+  it("clash cell keeps a course color and adds a red ring (not color alone)", () => {
+    render(<WeeklyScheduleGrid entries={[CLASH_ENTRY]} />);
+    const clashCell = screen.getByRole("cell", { name: /choque|clash/i });
+    expect([...clashCell.classList].some((c) => c.startsWith("bg-"))).toBe(true);
+    expect(clashCell.className).toContain("ring-destructive");
   });
 });
