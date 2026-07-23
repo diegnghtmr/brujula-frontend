@@ -111,22 +111,18 @@ function SimulationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 max-w-5xl mx-auto" role="status" aria-live="polite">
+      <div className="p-6 max-w-6xl mx-auto" role="status" aria-live="polite">
         <span className="sr-only">Cargando simulación…</span>
         {/* Header skeleton */}
         <div className="mb-6 flex flex-col gap-2">
           <Skeleton className="h-8 w-1/2" />
           <Skeleton className="h-4 w-1/4" />
         </div>
-        {/* Main grid skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <Skeleton className="h-48 w-full rounded-none" />
-            <Skeleton className="h-32 w-full rounded-none" />
-          </div>
-          <div className="flex flex-col gap-6">
-            <Skeleton className="h-40 w-full rounded-none" />
-          </div>
+        {/* Full-width schedule + stacked content skeleton */}
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-96 w-full rounded-none" />
+          <Skeleton className="h-28 w-full rounded-none" />
+          <Skeleton className="h-48 w-full rounded-none" />
         </div>
       </div>
     );
@@ -195,7 +191,7 @@ function SelectionsWithCurriculum({
     : [];
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto">
       <header className="mb-6">
         <BackLink to="/simulations" />
         <div className="mt-2 flex items-start justify-between gap-4 flex-wrap">
@@ -231,80 +227,78 @@ function SelectionsWithCurriculum({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: schedule + selections */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Weekly schedule grid */}
-          <section aria-labelledby="schedule-heading">
-            <h2 id="schedule-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
-              Horario semanal
-            </h2>
-            <WeeklyScheduleGrid entries={detail.weeklySchedule ?? []} />
-          </section>
+      {/* Weekly schedule — full width (moved out of the sidebar grid so it uses the whole width) */}
+      <section aria-labelledby="schedule-heading" className="mb-6">
+        <h2 id="schedule-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
+          Horario semanal
+        </h2>
+        <WeeklyScheduleGrid entries={detail.weeklySchedule ?? []} />
+      </section>
 
-          {/* Selections list — grouped by semester */}
-          {selectionGroups.length > 0 && (
-            <section aria-labelledby="selections-heading">
-              <h2 id="selections-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
-                Materias seleccionadas
-              </h2>
-              <div className="flex flex-col gap-3">
-                {selectionGroups.map((group) => (
-                  <div key={group.semester ?? "otras"}>
-                    <h3 className="text-xs font-medium text-muted-foreground mb-1 px-1">
-                      {group.label}
-                    </h3>
-                    <ul className="flex flex-col gap-2">
-                      {group.selections.map((sel) => (
-                        <SelectionRow
-                          key={sel.id}
-                          simulationId={simulationId}
-                          selection={sel}
-                          onRemove={onRemoveSelection}
-                          isRemoving={isRemoving}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+      {/* Credit summary + weekly hours — moved below the schedule */}
+      {((detail.creditSummary && detail.creditSummary.length > 0) ||
+        (detail.totalWeeklyHours !== undefined && detail.totalWeeklyHours > 0)) && (
+        <section aria-labelledby="credits-heading" className="mb-6">
+          <h2 id="credits-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
+            Resumen de créditos
+          </h2>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            {detail.creditSummary && detail.creditSummary.length > 0 && (
+              <div className="flex-1">
+                <CreditSummaryPanel summaries={detail.creditSummary} />
               </div>
-            </section>
-          )}
+            )}
+            {detail.totalWeeklyHours !== undefined && detail.totalWeeklyHours > 0 && (
+              <div className="p-3 rounded border bg-muted/10 border-border sm:w-56 sm:shrink-0">
+                <span className="text-xs text-muted-foreground">Total horas semanales</span>
+                <div className="text-lg font-bold text-foreground">{detail.totalWeeklyHours}h</div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
-          {/* Offering browser */}
-          <section aria-labelledby="offerings-heading">
-            <h2 id="offerings-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
-              Explorar ofertas
-            </h2>
-            <OfferingBrowser
-              simulationId={simulationId}
-              periodId={detail.periodId}
-              scopeEntries={scopeEntries}
-              selectedOfferingIds={selections.map((selection) => selection.offeringId)}
-            />
-          </section>
-        </div>
+      {/* Selections list — grouped by semester */}
+      {selectionGroups.length > 0 && (
+        <section aria-labelledby="selections-heading" className="mb-6">
+          <h2 id="selections-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
+            Materias seleccionadas
+          </h2>
+          <div className="flex flex-col gap-3">
+            {selectionGroups.map((group) => (
+              <div key={group.semester ?? "otras"}>
+                <h3 className="text-xs font-medium text-muted-foreground mb-1 px-1">
+                  {group.label}
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {group.selections.map((sel) => (
+                    <SelectionRow
+                      key={sel.id}
+                      simulationId={simulationId}
+                      selection={sel}
+                      onRemove={onRemoveSelection}
+                      isRemoving={isRemoving}
+                    />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
-        {/* Right column: credit summary */}
-        <div className="flex flex-col gap-6">
-          {/* Credit summary */}
-          {detail.creditSummary && detail.creditSummary.length > 0 && (
-            <section aria-labelledby="credits-heading">
-              <h2 id="credits-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
-                Resumen de créditos
-              </h2>
-              <CreditSummaryPanel summaries={detail.creditSummary} />
-            </section>
-          )}
-
-          {detail.totalWeeklyHours !== undefined && detail.totalWeeklyHours > 0 && (
-            <div className="p-3 rounded border bg-muted/10 border-border">
-              <span className="text-xs text-muted-foreground">Total horas semanales</span>
-              <div className="text-lg font-bold text-foreground">{detail.totalWeeklyHours}h</div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Offering browser */}
+      <section aria-labelledby="offerings-heading">
+        <h2 id="offerings-heading" className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wide">
+          Explorar ofertas
+        </h2>
+        <OfferingBrowser
+          simulationId={simulationId}
+          periodId={detail.periodId}
+          scopeEntries={scopeEntries}
+          selectedOfferingIds={selections.map((selection) => selection.offeringId)}
+        />
+      </section>
     </div>
   );
 }
