@@ -100,6 +100,10 @@ pnpm test
 
 [CI](.github/workflows/ci.yml) installs from the frozen lockfile, generates the client, then runs lint, type checking, and Vitest. [`ci/run.sh`](ci/run.sh) mirrors that gate locally. The opt-in real-stack job uses [`ci/run-e2e.sh`](ci/run-e2e.sh) with Docker, Chromium, and the companion backend; it exercises the application with Keycloak, PostgreSQL, and the API. `pnpm test:watch` and `pnpm test:e2e:ui` are interactive alternatives for their respective suites.
 
+## Documentation
+
+- [Production deployment](docs/deployment.md) — nginx rewrite example, OAuth routing, and the Spring context-path alternative.
+
 ## Related repositories
 
 - [brujula-backend](https://github.com/diegnghtmr/brujula-backend) — curriculum, progress, simulation, sign-in, and the source OpenAPI contract.
